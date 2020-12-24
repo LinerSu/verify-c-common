@@ -15,7 +15,8 @@ int main() {
   aws_linked_list_save_to_tail(&list, size, start, &to_save);
 
   // precondition in function does not accept empty linked list
-  assume(!aws_linked_list_empty(&list));
+  if (aws_linked_list_empty(&list))
+    return 0;
 
   /* perform operation under verification */
   struct aws_linked_list_node *front = aws_linked_list_front(&list);

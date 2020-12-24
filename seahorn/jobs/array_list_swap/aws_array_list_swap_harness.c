@@ -13,16 +13,18 @@
 int main() {
     /* data structure */
     struct aws_array_list list;
-    initialize_array_list(&list);
+    initialize_bounded_array_list(&list, MAX_INITIAL_SIZE,
+        MAX_INITIAL_ITEM_ALLOCATION, MAX_ITEM_SIZE);
 
     /* parameters */
     size_t index_a = nd_size_t();
     size_t index_b = nd_size_t();
 
     /* assumptions */
-    assume(aws_array_list_is_bounded(&list, MAX_INITIAL_ITEM_ALLOCATION, MAX_ITEM_SIZE));
     assume(aws_array_list_is_valid(&list));
 
+    // if (aws_array_list_length(&list) == 0) 
+    //     return 0;
     assume(index_a < aws_array_list_length(&list));
     assume(index_b < aws_array_list_length(&list));
 

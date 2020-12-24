@@ -16,7 +16,7 @@ int main() {
   struct aws_linked_list_node *start = &list.tail;
   aws_linked_list_save_to_head(&list, size, start, &to_save);
   // function only accepts non empty linked lists
-  assume(size > 0);
+  if (size == 0) return 0;
 
   /* perform operation under verification */
   struct aws_linked_list_node *back = aws_linked_list_back(&list);

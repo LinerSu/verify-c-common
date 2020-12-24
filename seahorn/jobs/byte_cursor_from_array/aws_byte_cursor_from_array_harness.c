@@ -11,6 +11,7 @@
 int main() {
     /* parameters */
     size_t length = nd_size_t();
+    assume(length <= MAX_INITIAL_SIZE);
     uint8_t *array = bounded_malloc(length);
 
     /* operation under verification */

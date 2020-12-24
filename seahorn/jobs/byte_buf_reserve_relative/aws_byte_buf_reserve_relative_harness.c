@@ -14,14 +14,15 @@ int main() {
 
     struct aws_byte_buf old = buf;
     size_t requested_capacity = MAX_BUFFER_SIZE;
-    assume(buf.capacity < MAX_BUFFER_SIZE);
-    int rval = aws_byte_buf_reserve_relative(&buf, requested_capacity);
+    if (buf.capacity < MAX_BUFFER_SIZE) {
+        int rval = aws_byte_buf_reserve_relative(&buf, requested_capacity);
 
-    if (rval == AWS_OP_SUCCESS) {
-        sassert(buf.capacity >= (old.len + requested_capacity));
-        sassert(aws_byte_buf_has_allocator(&buf));
+        if (rval == AWS_OP_SUCCESS) {
+            sassert(buf.capacity >= (old.len + requested_capacity));
+            sassert(aws_byte_buf_has_allocator(&buf));
+        }
+        sassert(aws_byte_buf_is_valid(&buf));
     }
-    sassert(aws_byte_buf_is_valid(&buf));
 
     return 0;
 }

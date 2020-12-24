@@ -8,20 +8,17 @@
 #include <utils.h>
 #include <proof_allocators.h>
 
-/**
- * Runtime: 19s
- */
 int main() {
 
     /* data structure */
     struct aws_array_list list;
-    initialize_array_list(&list);
-
-    void *val = bounded_malloc(list.item_size);
+    initialize_bounded_array_list(&list, MAX_INITIAL_SIZE,
+        MAX_INITIAL_ITEM_ALLOCATION, MAX_ITEM_SIZE);
 
     /* assumptions */
-    assume(aws_array_list_is_bounded(&list, MAX_INITIAL_ITEM_ALLOCATION, MAX_ITEM_SIZE));
     assume(aws_array_list_is_valid(&list));
+
+    void *val = bounded_malloc(list.item_size);
 
     /* save current state of the data structure */
     struct aws_array_list old = list;
@@ -29,7 +26,6 @@ int main() {
     save_byte_from_array((uint8_t *)list.data, list.current_size, &old_byte);
 
     /* assume preconditions */
-    assume(aws_array_list_is_valid(&list));
     assume(val && AWS_MEM_IS_WRITABLE(val, list.item_size));
 
     /* perform operation under verification */

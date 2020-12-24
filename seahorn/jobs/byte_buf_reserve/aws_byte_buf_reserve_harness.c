@@ -15,9 +15,8 @@ int main() {
 
     //struct aws_byte_buf old = buf;
     size_t requested_capacity = MAX_BUFFER_SIZE;//nd_size_t();
-    assume(buf.capacity < MAX_BUFFER_SIZE);
 
-    if (aws_byte_buf_reserve(&buf, requested_capacity) == AWS_OP_SUCCESS) {
+    if (buf.capacity < MAX_BUFFER_SIZE && aws_byte_buf_reserve(&buf, requested_capacity) == AWS_OP_SUCCESS) {
         sassert(buf.capacity >= requested_capacity);
         //sassert(aws_byte_buf_has_allocator(&buf));
     }

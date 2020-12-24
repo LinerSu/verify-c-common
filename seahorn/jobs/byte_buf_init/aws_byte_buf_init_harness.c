@@ -16,6 +16,7 @@ int main() {
     /* parameters */
     struct aws_allocator *allocator = sea_allocator(); /* Precondition: allocator is non-null */
     size_t capacity = nd_size_t();
+    assume(capacity <= MAX_INITIAL_SIZE);
 
     if (aws_byte_buf_init(&buf, allocator, capacity) == AWS_OP_SUCCESS) {
         /* assertions */

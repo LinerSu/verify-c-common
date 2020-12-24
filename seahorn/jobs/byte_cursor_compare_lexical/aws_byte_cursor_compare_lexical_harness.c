@@ -15,13 +15,13 @@ int main() {
 
     /* assumptions */
     assume(aws_byte_cursor_is_valid(&lhs));
-    assume(lhs.ptr != NULL);
+    if (lhs.ptr == NULL) return 0;
     if (nd_bool()) {
         rhs = lhs;
     } else {
         initialize_byte_cursor(&rhs);
         assume(aws_byte_cursor_is_valid(&rhs));
-        assume(rhs.ptr != NULL);
+        if (rhs.ptr == NULL) return 0;
     }
 
     /* save current state of the data structure */
