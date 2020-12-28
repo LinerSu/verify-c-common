@@ -28,6 +28,7 @@ def write_switch_into_line(switch_str):
     except:
         sys.exit("output klee switch file does not exits. Exit!")
     file.write(header_str+switch_str)
+    file.close()
 
 def check_switch_is_consist():
     try:
@@ -35,6 +36,7 @@ def check_switch_is_consist():
     except:
         sys.exit("input klee switch file does not exits. Exit!")
     count = sum(1 for line in file)
+    file.close()
     return max_initial_size > count - 4
 
 def main():
