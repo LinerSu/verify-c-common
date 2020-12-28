@@ -10,7 +10,7 @@ args = parser.parse_args()
 
 libdir = args.path
 max_initial_size = args.size
-klee_switch_file = libdir+"/klee_switch.c"
+klee_switch_file = args.path
 
 def create_big_switch():
     func_declr = "size_t alloc_size(size_t sz) {\n  switch(sz) {\n"
