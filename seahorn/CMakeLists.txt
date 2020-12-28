@@ -251,10 +251,12 @@ macro(sea_add_klee_bc name)
   set(TARGET_KLEE "${name}.klee")
   add_executable(${TARGET_KLEE} ${ARG_UNPARSED_ARGUMENTS})
   target_compile_definitions(${TARGET_KLEE} PUBLIC 
-    MAX_INITIAL_SIZE=${MAX_INITIAL_SIZE}
+    MAX_BUFFER_SIZE=${MAX_BUFFER_SIZE}
+    MAX_STRING_LEN=${MAX_STRING_LEN}
+    # Temporary set the maximum size of array list is 10 due to 
+    MAX_INITIAL_SIZE=3
     MAX_ITEM_SIZE=${MAX_ITEM_SIZE}
-    MAX_INITIAL_ITEM_ALLOCATION=${MAX_INITIAL_ITEM_ALLOCATION}
-    )
+    MAX_INITIAL_ITEM_ALLOCATION=${MAX_INITIAL_ITEM_ALLOCATION})
   klee_attach_bc_link(${TARGET_KLEE})
 endmacro()
 
@@ -275,8 +277,7 @@ endif()
 
 function(sea_add_klee_test TARGET)
   sea_get_file_name(BC ${TARGET}.klee.ir)
-  set(TIME_OUT_VAL 180) # Set a timeout value for 3 minutes
-  add_test(NAME "klee_${TARGET}_test" COMMAND timeout ${TIME_OUT_VAL} klee --libc=uclibc --exit-on-error ${BC})
+  add_test(NAME "klee_${TARGET}_test" COMMAND klee --libc=uclibc --exit-on-error ${BC})
 endfunction()
 
 macro(sea_add_klee)

@@ -23,8 +23,8 @@ int main() {
     /* assumptions */
     assume(aws_array_list_is_valid(&list));
 
-    // if (aws_array_list_length(&list) == 0) 
-    //     return 0;
+    if (aws_array_list_length(&list) == 0) 
+        return 0;
     assume(index_a < aws_array_list_length(&list));
     assume(index_b < aws_array_list_length(&list));
 
