@@ -34,7 +34,7 @@ jobs:
 
       - if: ${{ matrix.verify_flag == 'klee' }}
         name: Docker with KLEE
-        run: docker build -t verify-c-common . --file docker/verify-c-common.Dockerfile --build-arg KLEE_ON=ON
+        run: docker build -t verify-c-common . --file docker/verify-c-common-klee.Dockerfile
         
       - name: Get number of Cores
         id: cores
