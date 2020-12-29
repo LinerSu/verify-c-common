@@ -1,6 +1,8 @@
 
+FROM leonsou/verify-c-common:klee as klee_base
+ARG KLEE_ON=OFF
 FROM seahorn/seahorn-llvm10:nightly
-
+RUN if [ "$KLEE_ON" = "ON" ] ; then cp -TRp /usr/ /usr/; fi
 ENV SEAHORN=/home/usea/seahorn/bin/sea PATH="$PATH:/home/usea/seahorn/bin:/home/usea/bin"
 
 ## install required pacakges
@@ -33,7 +35,7 @@ RUN mkdir build && cd build && cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=1 -DCMAKE_I
 
 WORKDIR /home/usea/verify-c-common
 
-RUN mkdir build && cd build && cmake -DSEA_LINK=llvm-link-10 -DCMAKE_C_COMPILER=clang-10 -DCMAKE_CXX_COMPILER=clang++-10 -DSEAHORN_ROOT=/home/usea/seahorn -DSEA_ENABLE_FUZZ=ON -Daws-c-common_DIR=$(pwd)/../aws-c-common/build/run/lib/aws-c-common/cmake/ ../ -GNinja && cmake --build .
+RUN mkdir build && cd build && cmake -DSEA_LINK=llvm-link-10 -DCMAKE_C_COMPILER=clang-10 -DCMAKE_CXX_COMPILER=clang++-10 -DSEAHORN_ROOT=/home/usea/seahorn -DSEA_ENABLE_FUZZ=ON -DSEA_ENABLE_KLEE=$KLEE_ON -Daws-c-common_DIR=$(pwd)/../aws-c-common/build/run/lib/aws-c-common/cmake/ ../ -GNinja && cmake --build .
 
 ## set default user and wait for someone to login and start running verification tasks
 USER usea
