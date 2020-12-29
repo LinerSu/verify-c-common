@@ -28,11 +28,11 @@ jobs:
         id: exclude_files
         run: (test -f ".github/workflows/blacklist.${{steps.type.outputs.type}}.txt" && echo ::set-output name=exclude_files::"($(cat ".github/workflows/blacklist.${{steps.type.outputs.type}}.txt" | tr '\n' '|'))" ) || (echo ::set-output name=exclude_files::" ")
      
-      - if: ${{ matrix.verify_flag }} != 'klee'
+      - if: ${{ matrix.verify_flag != 'klee' }}
         name: Docker 
         run: docker build -t verify-c-common . --file docker/verify-c-common.Dockerfile
 
-      - if: ${{ matrix.verify_flag }} == 'klee'
+      - if: ${{ matrix.verify_flag == 'klee' }}
         name: Docker with KLEE
         run: docker build -t verify-c-common . --file docker/verify-c-common.Dockerfile --build-arg KLEE_ON=ON
         
@@ -40,10 +40,10 @@ jobs:
         id: cores
         run: echo "::set-output name=num_cores::$(nproc --all)"
         
-      - if: ${{ matrix.verify_flag }} != 'klee'
+      - if: ${{ matrix.verify_flag != 'klee' }}
         name: Run SeaHorn Tests 
         run: docker run -t verify-c-common /bin/bash -c "cd build && env VERIFY_FLAGS=\"${{ matrix.verify_flag }}\" ctest -j ${{steps.cores.outputs.num_cores}} --timeout 2000 -E \"${{ steps.exclude_files.outputs.exclude_files }}\""
       
-      - if: ${{ matrix.verify_flag }} == 'klee'
+      - if: ${{ matrix.verify_flag == 'klee' }}
         name: Run KLEE Tests 
         run: docker run -t verify-c-common /bin/bash -c "cd build && ctest -R klee_ --timeout 2000"

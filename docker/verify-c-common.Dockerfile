@@ -1,8 +1,8 @@
 
 FROM leonsou/verify-c-common:klee as klee_base
-ARG KLEE_ON=OFF
 FROM seahorn/seahorn-llvm10:nightly
-RUN if [ "$KLEE_ON" = "ON" ] ; then cp -TRp /usr/ /usr/; fi
+ARG KLEE_ON=OFF
+COPY --from=klee_base /usr /usr/
 ENV SEAHORN=/home/usea/seahorn/bin/sea PATH="$PATH:/home/usea/seahorn/bin:/home/usea/bin"
 
 ## install required pacakges
