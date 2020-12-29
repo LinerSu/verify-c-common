@@ -46,8 +46,10 @@ RUN cd klee && mkdir build && cd build && cmake \
   -DBUILD_SHARED_LIBS:BOOL=OFF \
   .. && make && make install
 
+# Remove redundant pkgs
+WORKDIR /home/usea
 RUN apt-get clean && \
-    apt-get autoremove && \
+    apt-get autoremove -y && \
     rm -rf /var/lib/apt/lists/* &&\
     rm -rf /home/usea/tmp
 
