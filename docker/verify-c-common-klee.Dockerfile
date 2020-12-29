@@ -50,8 +50,7 @@ RUN cd klee && mkdir build && cd build && cmake \
 WORKDIR /home/usea
 RUN apt-get clean && \
     apt-get autoremove -y && \
-    rm -rf /var/lib/apt/lists/* &&\
-    rm -rf /home/usea/tmp
+    rm -rf /var/lib/apt/lists/*
 
 ## verify-c-common
 USER usea
