@@ -46,6 +46,11 @@ RUN cd klee && mkdir build && cd build && cmake \
   -DBUILD_SHARED_LIBS:BOOL=OFF \
   .. && make && make install
 
+RUN apt-get clean && \
+    apt-get autoremove && \
+    rm -rf /var/lib/apt/lists/* &&\
+    rm -rf /home/usea/tmp
+
 ## verify-c-common
 USER usea
 WORKDIR /home/usea
