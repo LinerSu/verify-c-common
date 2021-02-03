@@ -45,9 +45,9 @@ byte_buf_from_empty_array,52
 byte_buf_init,53
 byte_buf_init_copy,106
 byte_buf_init_copy_from_cursor,89
-byte_buf_reserve,57
+byte_buf_reserve,58
 byte_buf_reserve_relative,78
-byte_buf_reset,67
+byte_buf_reset,71
 byte_buf_secure_zero,61
 byte_buf_write,104
 byte_buf_write_be16,91
@@ -55,8 +55,8 @@ byte_buf_write_be32,91
 byte_buf_write_be64,97
 byte_buf_write_from_whole_buffer,104
 byte_buf_write_from_whole_cursor,124
-byte_buf_write_from_whole_string,132
-byte_buf_write_u8,85
+byte_buf_write_from_whole_string,135
+byte_buf_write_u8,86
 byte_cursor_advance,75
 byte_cursor_advance_nospec,88
 byte_cursor_compare_lexical,117
@@ -92,7 +92,7 @@ hash_iter_begin,169
 hash_iter_begin_done,186
 hash_iter_delete,185
 hash_iter_done,170
-hash_iter_next,183
+hash_iter_next,184
 hash_ptr,118
 hash_string,154
 hash_table_clean_up,149
@@ -120,7 +120,7 @@ linked_list_insert_after,37
 linked_list_insert_before,37
 linked_list_next,30
 linked_list_node_reset,22
-linked_list_pop_back,175
+linked_list_pop_back,176
 linked_list_pop_front,175
 linked_list_prev,30
 linked_list_push_back,174
@@ -169,4 +169,4 @@ string_eq_c_str_ignore_case,99
 string_eq_ignore_case,70
 string_new_from_array,74
 string_new_from_c_str,209
-string_new_from_string,90
+string_new_from_string,60
