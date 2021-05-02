@@ -15,7 +15,7 @@ FILE_DICT = {
     "--horn-bmc-solver=smt-y2": "seahorn(smt-y2).csv",
     "--cex": "seahorn(cex).csv",
     "--cex --horn-bmc-solver=smt-y2": "seahorn(cex, smt-y2).csv",
-    "klee": "klee.csv"}
+    "klee": "klee.csv", "smack": "smack.csv"}
 
 
 def get_output_level():
@@ -26,9 +26,9 @@ def get_output_level():
     return output_level
 
 
-def make_new_cmake_conf(use_klee, use_bleeding_edge):
+def make_new_cmake_conf(use_bleeding_edge, use_klee, use_smack):
     return f'cmake -DSEA_LINK=llvm-link-10 -DCMAKE_C_COMPILER=clang-10\
-    -DCMAKE_CXX_COMPILER=clang++-10 -DSEA_ENABLE_KLEE={use_klee}\
+    -DCMAKE_CXX_COMPILER=clang++-10 -DSEA_ENABLE_KLEE={use_klee} -DSEA_ENABLE_SMACK={use_smack}\
     -DSEA_WITH_BLEEDING_EDGE={use_bleeding_edge} -DSEAHORN_ROOT={SEAHORN_ROOT} ../ -GNinja'
 
 
@@ -72,7 +72,7 @@ def run_ctest_for_seahorn():
         print(f'Run SeaHorn with config: {verify_flag} ')
         set_env = f'env VERIFY_FLAGS={verify_flag}'
         cmake_conf = make_new_cmake_conf(
-            "OFF", "ON" if args.bleed_edge else "OFF")
+            "ON" if args.bleed_edge else "OFF", "OFF", "OFF")
         command_lst = ["rm -rf *", cmake_conf, "ninja",
                        f'{set_env} ctest -D ExperimentalTest -R . --timeout 2000']
         cddir = "cd " + BUILDABSPATH
@@ -89,12 +89,13 @@ def run_ctest_for_seahorn():
         collect_res_from_ctest(FILE_DICT[verify_flag])
 
 
-def run_ctest_for_klee():
-    use_klee = "ON"
-    cmake_conf = make_new_cmake_conf("ON", "ON" if args.bleed_edge else "OFF")
+def run_ctest_for_other_tools(tool_name):
+    use_klee = "ON" if tool_name == "klee" else "OFF"
+    use_smack = "ON" if tool_name == "smack" else "OFF"
+    cmake_conf = make_new_cmake_conf("ON" if args.bleed_edge else "OFF", use_klee, use_smack)
     command_lst = ["rm -rf *", cmake_conf, "ninja",
-                   f'ctest -D ExperimentalTest -R klee_ --timeout 2000']
-    print("Start making KLEE results...")
+                   f'ctest -D ExperimentalTest -R {tool_name}_ --timeout 2000']
+    print(f'Start making {tool_name} results...')
     cddir = "cd " + BUILDABSPATH
     for strcmd in command_lst:
         cddir += " ; " + strcmd
@@ -105,7 +106,7 @@ def run_ctest_for_klee():
         stdin=subprocess.PIPE,
         stdout=get_output_level())
     _ = process.communicate(cddir.encode())
-    collect_res_from_ctest(FILE_DICT["klee"])
+    collect_res_from_ctest(FILE_DICT[tool_name])
 
 
 def main():
@@ -113,8 +114,10 @@ def main():
     os.makedirs(BUILDABSPATH, exist_ok=True)
     if args.seahorn:
         run_ctest_for_seahorn()
-    if args.klee:
-        run_ctest_for_klee()
+    elif args.klee:
+        run_ctest_for_other_tools("klee")
+    elif args.smack:
+        run_ctest_for_other_tools("smack")
 
 
 if __name__ == "__main__":
@@ -123,9 +126,14 @@ if __name__ == "__main__":
         description='Present flags to decide which tool will be tested.')
     parser.add_argument('--seahorn', action='store_true', default=True)
     parser.add_argument('--klee', action='store_true', default=False)
+    parser.add_argument('--smack', action='store_true', default=False)
     parser.add_argument('--bleed_edge', action='store_true', default=False)
     parser.add_argument('--debug', action='store_true', default=False)
     args = parser.parse_args()
     if args.klee:
         args.seahorn = False
+        args.smack = False
+    if args.smack:
+        args.seahorn = False
+        args.klee = False
     main()
