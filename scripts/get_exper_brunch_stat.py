@@ -3,18 +3,50 @@ import csv
 import argparse
 from collections import defaultdict
 
+BRUNCH_DICT = {  # Dict stores csv columns to correspond name on BRUNCH STATS
+    "job_name": "Test: ",
+    "result": "Result",
+    "bmc.circ_sz": "bmc.circ_sz",
+    "bmc.dag_sz": "bmc.dag_sz",
+    "crab.isderef.not.solve": "crab.isderef.not.solve",  # for crab
+    "crab.isderef.solve": "crab.isderef.solve",  # for crab
+    "bmc_time": "BMC",
+    "bmc_solve_time": "BMC.solve",
+    "opsem_assert_time": "opsem.assert",
+    "opsem_simplify_time": "opsem.simplify",
+    "seahorn_total_time": "seahorn_total"
+    # ADD additional coloumn and corresponded pattern on outputs here
+}
 
-def read_brunchstat_from_log(log_file_name):
+
+def move_dict_items_to_lst(dt):
+    res = []
+    for key in BRUNCH_DICT:
+        if key == "job_name":
+            continue
+        if key not in dt:
+            res.append(0)
+        else:
+            res.append(dt[key])
+    return res
+
+
+def read_brunchstat_from_log(log_file_name, use_crab=False):
     log_file = open(log_file_name, 'r')
     line = log_file.readline()
     data = defaultdict(list)
+    row_dict = {}
     cur_test = None
-    first = False
-    second = False
+    if not use_crab:
+        del BRUNCH_DICT["crab.isderef.not.solve"]
+        del BRUNCH_DICT["crab.isderef.solve"]
     while line:
         # look for next test
-        new_test = re.search("Test: ", line)
+        new_test = re.search(BRUNCH_DICT["job_name"], line)
         if new_test:
+            if cur_test:
+                data[cur_test] = move_dict_items_to_lst(row_dict)
+                row_dict.clear()
             span = new_test.span()
             test_name = line[span[1]:]
             # remove _unsat_test
@@ -22,43 +54,20 @@ def read_brunchstat_from_log(log_file_name):
         elif line.startswith("BRUNCH_STAT"):
             stat = line.split()
             # stat_name = " ".join(stat[1:-1])
-            if stat[1] == "crab.isderef.not.solve":
-                first = True
-            if stat[1] == "crab.isderef.solve":
-                if not first:
-                    data[cur_test].append(0)
-                    first = True
-                second = True
-            if stat[1] == "BMC":
-                if not first:
-                    data[cur_test].append(0)
-                if not second:
-                    data[cur_test].append(0)
-                first = False
-                second = False
             stat_num = stat[-1]
-            data[cur_test].append(stat_num)
+            for key in BRUNCH_DICT:
+                if stat[1] == BRUNCH_DICT[key]:
+                    row_dict[key] = stat_num
         line = log_file.readline()
-
     log_file.close()
     return data
 
 
 def write_brunchstat_into_csv(data, out_file):
+    print(out_file)
     with open(out_file, 'w+', newline='') as csvfile:
         writer = csv.writer(csvfile)
-        writer.writerow([
-            "job_name",
-            "result",
-            "bmc.circ_sz",
-            "bmc.dag_sz",
-            "crab.isderef.not.solve",
-            "crab.isderef.solve",
-            "bmc_time",
-            "bmc_solve_time",
-            "opsem_assert_time",
-            "opsem_simp_time",
-            "seahorn_total_time"])
+        writer.writerow(list(BRUNCH_DICT.keys()))
         for k, v in data.items():
             writer.writerow([k, *v])
 

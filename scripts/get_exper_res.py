@@ -121,7 +121,8 @@ def run_ctest_for_seahorn():
         stdout=get_output_level())
     _ = process.communicate(cddir.encode())
     collect_res_from_ctest(extra_to_filename(extra))
-    collect_stat_from_ctest_log(extra_to_filename(extra, suffix='.brunch.csv'))
+    collect_stat_from_ctest_log(extra_to_filename(extra, suffix='.brunch.csv'),
+                                True if "--crab" in extra else False)
 
 
 def collect_stat_from_ctest_log(outfile):
