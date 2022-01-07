@@ -169,3 +169,4 @@ ring_buffer_acquire_unsat_test,37.498,passed
 hash_table_foreach_deep_precise_unsat_test,36.3507,passed
 priority_queue_s_swap_unsat_test,52.5433,passed
 hash_table_foreach_deep_loose_unsat_test,47.788,passed
+string_new_from_string_unsat_test,3.49638,passed
