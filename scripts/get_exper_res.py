@@ -125,13 +125,13 @@ def run_ctest_for_seahorn():
                                 True if "--crab" in extra else False)
 
 
-def collect_stat_from_ctest_log(outfile):
+def collect_stat_from_ctest_log(outfile, use_crab):
     test_tmpdir = os.path.join(BUILDABSPATH, 'Testing', 'Temporary')
     logfiles = [i for i in os.listdir(test_tmpdir)if os.path.isfile(
         os.path.join(test_tmpdir, i)) and i.startswith("LastTest_")]
     latest_log = logfiles[0]
     print("collecting brunch stat from " + logfiles[0])
-    data = read_brunchstat_from_log(os.path.join(test_tmpdir, latest_log))
+    data = read_brunchstat_from_log(os.path.join(test_tmpdir, latest_log), use_crab)
     outpath = os.path.join(DATAABSPATH, outfile)
     write_brunchstat_into_csv(data, outpath)
 

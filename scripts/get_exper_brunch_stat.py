@@ -12,6 +12,7 @@ BRUNCH_DICT = {  # Dict stores csv columns to correspond name on BRUNCH STATS
     "crab.isderef.solve": "crab.isderef.solve",  # for crab
     "bmc_time": "BMC",
     "bmc_solve_time": "BMC.solve",
+    "crab_time": "crab.time",
     "opsem_assert_time": "opsem.assert",
     "opsem_simplify_time": "opsem.simplify",
     "seahorn_total_time": "seahorn_total"
@@ -40,6 +41,7 @@ def read_brunchstat_from_log(log_file_name, use_crab=False):
     if not use_crab:
         del BRUNCH_DICT["crab.isderef.not.solve"]
         del BRUNCH_DICT["crab.isderef.solve"]
+        del BRUNCH_DICT["crab.time"]
     while line:
         # look for next test
         new_test = re.search(BRUNCH_DICT["job_name"], line)
@@ -59,6 +61,8 @@ def read_brunchstat_from_log(log_file_name, use_crab=False):
                 if stat[1] == BRUNCH_DICT[key]:
                     row_dict[key] = stat_num
         line = log_file.readline()
+    if cur_test:
+        data[cur_test] = move_dict_items_to_lst(row_dict)
     log_file.close()
     return data
 
