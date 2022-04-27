@@ -15,7 +15,8 @@ BRUNCH_DICT = {  # Dict stores csv columns to correspond name on BRUNCH STATS
     "crab_time": "crab.time",
     "opsem_assert_time": "opsem.assert",
     "opsem_simplify_time": "opsem.simplify",
-    "seahorn_total_time": "seahorn_total"
+    "seahorn_total_time": "seahorn_total",
+    "move_object": "object_domain_use_odi"
     # ADD additional coloumn and corresponded pattern on outputs here
 }
 
