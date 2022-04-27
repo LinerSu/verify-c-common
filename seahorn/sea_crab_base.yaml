@@ -5,6 +5,10 @@ verify_options:
   horn-vcgen-only-dataflow: false
 # reduce by data dependence
   horn-bmc-coi: false
-  horn-bv2-crab-check-is-deref: ''
+# Use crab solve sea.is_deref
+  # horn-bv2-crab-check-is-deref: ''
+# Use crab infer allocation range
+  horn-bv2-crab-rng: ''
   horn-bmc-crab-dom: 'zones'
-  # crab-dom-param: '"region.is_dereferenceable=true:object.reduce_everywhere=true"'
+# Statistics
+  # horn-bv2-crab-stats: ''
