@@ -15,16 +15,20 @@ void *realloc(void *ptr, size_t new_size) { return sea_realloc(ptr, new_size); }
 
 void *bounded_malloc_havoc(size_t size) {
   #ifdef __CRAB__
-  assume(size > 1);
-  #endif
+  assume(size > 0);
+  return sea_malloc_havoc_safe(size);
+  #else
   return size == 0 ? NULL : sea_malloc_havoc_safe(size);
+  #endif
 }
 
 void *can_fail_malloc_havoc(size_t size) {
   #ifdef __CRAB__
-  assume(size > 1);
-  #endif
+  assume(size > 0);
+  return sea_malloc_havoc(size);
+  #else
   return size == 0 ? NULL : sea_malloc_havoc(size);
+  #endif
 }
 
 /**
