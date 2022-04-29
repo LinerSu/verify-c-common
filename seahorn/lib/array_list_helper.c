@@ -28,11 +28,14 @@ void initialize_bounded_array_list(struct aws_array_list *const list) {
   list->length = nd_size_t();
   list->data = can_fail_malloc_havoc(list->current_size);
   list->alloc = sea_allocator();
-  assume(aws_array_list_is_bounded(list, 
-      sea_max_array_list_len(), sea_max_array_list_item_size()));
-  // assume(list->length <= sea_max_array_list_len());
-  // assume(list->item_size == sea_max_array_list_item_size());
-  // assume(list->current_size >= list->item_size * list->length);
+  #ifndef __CRAB_SPLIT_ASSUME__
+    assume(aws_array_list_is_bounded(list, 
+        sea_max_array_list_len(), sea_max_array_list_item_size()));
+  #else
+    assume(list->length <= sea_max_array_list_len());
+    assume(list->item_size == sea_max_array_list_item_size());
+    assume(list->current_size >= list->item_size * list->length);
+  #endif
 }
 
 bool aws_array_list_is_bounded(const struct aws_array_list *const list,

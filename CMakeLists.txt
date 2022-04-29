@@ -15,6 +15,7 @@ option(SEA_LLVM_MEM_BUILTINS "Use LLVM builtins memcpy/memmove without memory sa
 
 option(SEA_ENABLE_FUZZ "Enable fuzzing" OFF)
 option(SEA_ENABLE_CRAB "Enable Seahorn using Clam/Crab" OFF)
+option(CRAB_SPLIT_ASSUME "Split conjunction assume into single" OFF)
 option(SEA_WITH_BLEEDING_EDGE "Enable bleeding edge proofs" OFF)
 
 option(SEA_ENABLE_KLEE "Enable klee" OFF)
