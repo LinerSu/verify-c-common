@@ -1,4 +1,4 @@
-FROM ubuntu:18.04
+FROM diffblue/cbmc:5.56.0
 
 ## install required pacakges
 USER root
@@ -12,26 +12,6 @@ RUN apt-get update && \
 
 RUN rm /usr/bin/python3 && ln /usr/bin/python3.8 /usr/bin/python3
 RUN pip3 install jinja2 voluptuous
-
-# RUN wget https://github.com/diffblue/cbmc/releases/download/cbmc-5.21.0/ubuntu-18.04-cbmc-5.21.0-Linux.deb
-# RUN dpkg -i ubuntu-18.04-cbmc-5.21.0-Linux.deb
-
-WORKDIR /home/
-RUN git clone https://github.com/diffblue/cbmc.git
-RUN cd cbmc && git checkout be9b3b4 && \
-    make DOWNLOADER='wget' -C src minisat2-download && \
-    make -C src CXX=g++-10 -j8
-RUN mkdir bin
-
-WORKDIR /home/cbmc/bin
-ENV CBMCSRCDIR=/home/cbmc/src
-ENV USRBINPATH='/usr/bin'
-RUN cp ${CBMCSRCDIR}/goto-analyzer/goto-analyzer ${USRBINPATH}
-RUN cp ${CBMCSRCDIR}/goto-cc/goto-cc ${USRBINPATH}
-RUN cp ${CBMCSRCDIR}/goto-instrument/goto-instrument ${USRBINPATH}
-RUN cp ${CBMCSRCDIR}/goto-diff/goto-diff ${USRBINPATH}
-RUN cp ${CBMCSRCDIR}/cbmc/cbmc ${USRBINPATH}
-# ENV PATH="/home/cbmc/bin:${PATH}"
 
 WORKDIR /home/
 RUN rm -rf aws-c-common && git clone https://github.com/awslabs/aws-c-common.git
