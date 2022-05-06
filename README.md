@@ -12,7 +12,7 @@ This repository contains the unit proofs as well as a build system used in the *
 
 # Results
 Detailed analysis of run-times is available in an accompanying [Jupyter
-Notebook][data] in Google Collab. Coverage reports from fuzzing are available
+Notebook][data] in Google Colab. Coverage reports from fuzzing are available
 [here][fuzz].
 
 [data]: https://colab.research.google.com/github/seahorn/verify-c-common/blob/master/experiment_results.ipynb
