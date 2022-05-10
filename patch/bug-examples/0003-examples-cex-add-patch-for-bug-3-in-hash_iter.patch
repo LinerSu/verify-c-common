@@ -1,0 +1,25 @@
+From 8329a4f507a45531c24d07eba4148fb9682624f6 Mon Sep 17 00:00:00 2001
+From: Yusen Su <y256su@uwaterloo.ca>
+Date: Sun, 8 May 2022 22:41:00 -0400
+Subject: [PATCH] examples(cex): add patch for bug 3 in hash_iter
+
+---
+ seahorn/jobs/hash_table_foreach/CMakeLists.txt | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/seahorn/jobs/hash_table_foreach/CMakeLists.txt b/seahorn/jobs/hash_table_foreach/CMakeLists.txt
+index e2134f9..52c7769 100644
+--- a/seahorn/jobs/hash_table_foreach/CMakeLists.txt
++++ b/seahorn/jobs/hash_table_foreach/CMakeLists.txt
+@@ -8,7 +8,7 @@ target_compile_definitions(hash_table_foreach
+                             MAX_TABLE_SIZE=${MAX_TABLE_SIZE})
+ sea_link_libraries(hash_table_foreach hash_table.opt.ir)
+ sea_overlink_libraries(hash_table_foreach aws_hash_iter_overrides.ir)
+-sea_overlink_libraries(hash_table_foreach hash_table_state_is_valid_ignore_entry_count_override.ir)
++sea_overlink_libraries(hash_table_foreach hash_table_state_is_valid_override.ir)
+ sea_attach_bc_link(hash_table_foreach)
+ configure_file(sea.yaml sea.yaml @ONLY)
+ sea_add_unsat_test(hash_table_foreach)
+-- 
+2.25.1
+
