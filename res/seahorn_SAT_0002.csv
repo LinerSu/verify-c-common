@@ -1,2 +1,6 @@
 Name,Timing,Result
-array_eq_c_str_unsat_test,1.64464,failed
+array_eq_c_str_unsat_test,1.67275,failed
+byte_cursor_read_unsat_test,0.660591,failed
+byte_cursor_read_and_fill_buffer_unsat_test,0.749978,failed
+string_eq_byte_buf_unsat_test,1.48583,failed
+string_new_from_array_unsat_test,1.32838,failed
