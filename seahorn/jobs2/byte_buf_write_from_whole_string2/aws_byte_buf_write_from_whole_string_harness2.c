@@ -11,9 +11,14 @@
 #include <stddef.h>
 
 int main(void) {
+#ifdef __CRAB__
+  struct aws_string *str =
+      ensure_string_is_allocated_bounded_length(MAX_STRING_LEN);
+#else
   struct aws_string *str =
       nd_bool() ? ensure_string_is_allocated_bounded_length(MAX_STRING_LEN)
                 : NULL;
+#endif
   struct aws_byte_buf buf;
   initialize_byte_buf(&buf);
 
@@ -25,7 +30,11 @@ int main(void) {
   sea_tracking_on();
 
   size_t available_cap = buf.capacity - buf.len;
+#ifdef __CRAB__
+  bool nondet_parameter = true;
+#else
   bool nondet_parameter = nd_bool();
+#endif
 
   /* operation under verification */
   if (aws_byte_buf_write_from_whole_string(nondet_parameter ? &buf : NULL,

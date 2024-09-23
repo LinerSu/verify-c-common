@@ -1,6 +1,7 @@
 #include <bounds.h>
 #include <seahorn/seahorn.h>
 
+#include <nondet.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -58,6 +59,9 @@ INLINE int memcmp(const void *s1, const void *s2, size_t n) {
   /* pre-unroll the loop for MAX_BUFFER_SIZE */
   for (i = 0; i < max_buffer_size; i++) {
     if (i < n) {
+      // i < 40 && n < 40 && i < n
+      // sea.is_deref(p1 + i, 1)
+      // p1.offset + i + 1 <= p1.size => i + 1 <= 40 => i <= 39
       if (p1[i] != p2[i]) {
         return p1[i] < p2[i] ? -1 : 1;
       }
@@ -178,7 +182,24 @@ INLINE void *memset(void * dst, int s, size_t count) {
 
 INLINE void *memchr(const void *str, int c, size_t n) {
   sassert(sea_is_dereferenceable(str, n));
-  return __builtin_memchr(str, c, n);
+  size_t i;
+  size_t max_buffer_size = sea_max_buffer_size();
+  uint8_t ch = (uint8_t)c;
+
+  const uint8_t *p;
+  /* pre-unroll the loop for MAX_BUFFER_SIZE */
+  for (i = 0; i < max_buffer_size; i++) {
+    if (i < n) {
+      if (p[i] == ch)
+        return (void *)&p[i];
+    }
+  }
+  /* unroll the rest, if any */
+  for (i = max_buffer_size; i < n; i++) {
+    if (p[i] == ch)
+      return (void *)&p[i];
+  }
+  return NULL;
 }
 
 INLINE int strncmp(const char *str1, const char *str2, size_t n) {

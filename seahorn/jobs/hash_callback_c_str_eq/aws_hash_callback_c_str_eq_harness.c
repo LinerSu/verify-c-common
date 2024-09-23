@@ -41,14 +41,17 @@ int main(void) {
   size_t str1_len;
   size_t str2_len;
   const char *str1 = ensure_c_str_is_nd_allocated(MAX_STRING_LEN, &str1_len);
+#ifdef __CRAB__
+  const char *str2 = ensure_c_str_is_nd_allocated(MAX_STRING_LEN, &str2_len);
+#else
   const char *str2 =
       nd_bool() ? str1
                 : ensure_c_str_is_nd_allocated(MAX_STRING_LEN, &str2_len);
-
-  #ifdef __KLEE__
-    if (!str1 || !str2)
-      return 0;
-  #endif
+#endif
+#ifdef __KLEE__
+  if (!str1 || !str2)
+    return 0;
+#endif
   assume(aws_c_string_is_valid(str1));
   assume(aws_c_string_is_valid(str2));
 

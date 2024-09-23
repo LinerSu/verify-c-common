@@ -1,2 +1,2 @@
 verify_options:
-  horn-bmc-tactic: smtfd
+  # horn-bmc-tactic: smtfd

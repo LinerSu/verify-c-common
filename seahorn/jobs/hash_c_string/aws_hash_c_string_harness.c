@@ -14,12 +14,16 @@
 
 int main(void) {
   size_t len;
+#ifdef __CRAB__
+  const char *str = ensure_c_str_is_nd_allocated(MAX_STRING_LEN, &len);
+#else
   const char *str = ensure_c_str_is_nd_allocated_aligned(MAX_STRING_LEN, &len);
+#endif
 
-  #ifdef __KLEE__
-    if (!str)
-      return 0;
-  #endif
+#ifdef __KLEE__
+  if (!str)
+    return 0;
+#endif
   assume(aws_c_string_is_valid(str));
 
   uint64_t rval = aws_hash_c_string(str);

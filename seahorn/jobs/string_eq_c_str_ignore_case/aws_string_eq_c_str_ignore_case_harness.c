@@ -10,11 +10,15 @@
 #include <stddef.h>
 
 int main() {
+#ifdef __CRAB__
+  struct aws_string *str =
+      ensure_string_is_allocated_bounded_length(MAX_BUFFER_SIZE);
+#else
   struct aws_string *str = nd_bool()
                                ? ensure_string_is_allocated_bounded_length(
                                      MAX_STRING_LEN /*  max size */)
                                : NULL;
-
+#endif
   size_t c_strlen = 0;
   const char *c_str = ensure_c_str_is_nd_allocated(MAX_STRING_LEN, &c_strlen);
 

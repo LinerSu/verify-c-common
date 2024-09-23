@@ -10,9 +10,13 @@
 #include <utils.h>
 
 int main(void) {
-  struct aws_string *str =
-      nd_bool() ? ensure_string_is_allocated_nondet_length() : NULL;
-  aws_string_destroy(str);
+  if (nd_bool()) {
+    struct aws_string *str = ensure_string_is_allocated_nondet_length();
+    aws_string_destroy(str);
+  } else {
+    struct aws_string *str = NULL;
+    aws_string_destroy(str);
+  }
 
   return 0;
 }

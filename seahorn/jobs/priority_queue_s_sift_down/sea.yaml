@@ -1,10 +1,12 @@
 verify_options:
   horn-bv2-word-size: 1
-  horn-bmc-tactic: 'smtfd' 
+  # horn-bmc-tactic: 'smtfd'
   # switch to true for faster verification times 
-  horn-explicit-sp0: true 
+  horn-explicit-sp0: false 
   # this benchmark uses AWS_ZEROED() which has undefined behavior
   # in this case, TBAA cannot be trusted
   horn-shadow-mem-use-tbaa: false
-  bound: 5
-  
+  bound: @MAX_PRIORITY_QUEUE_ITEMS@
+# array for memory
+  horn-bv2-lambdas: false
+  horn-bv2-simplify: false

@@ -1,3 +1,5 @@
 verify_options:
   bound: "@UNROLL_BOUND@"
-  horn-bmc-tactic: smtfd
+  # horn-bmc-tactic: smtfd
+  horn-bv2-lambdas: true
+  horn-bv2-simplify: false

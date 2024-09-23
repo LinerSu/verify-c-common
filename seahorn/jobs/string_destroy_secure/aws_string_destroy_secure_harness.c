@@ -16,7 +16,11 @@ int main(void) {
   size_t len = str->len;
   /* Tell CBMC to keep the buffer live after the free */
   /* __CPROVER_allocated_memory(bytes, len); */
+#ifdef __CRAB__
+  bool nondet_parameter = true;
+#else
   bool nondet_parameter = nd_bool();
+#endif
   aws_string_destroy_secure(nondet_parameter ? str : NULL);
   if (nondet_parameter) {
     #ifdef __KLEE__

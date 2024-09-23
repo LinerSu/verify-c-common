@@ -34,12 +34,19 @@ int main(void) {
     /* Assume that the two backpointers a, b are valid, either by
      * being NULL or by allocating their objects with their correct
      * values. */
+#ifdef __CRAB__
+    ((struct aws_priority_queue_node **)queue.backpointers.data)[a] =
+        sea_malloc_safe(sizeof(struct aws_priority_queue_node));
+    ((struct aws_priority_queue_node **)queue.backpointers.data)[b] =
+        sea_malloc_safe(sizeof(struct aws_priority_queue_node));
+#else
     ((struct aws_priority_queue_node **)queue.backpointers.data)[a] =
         nd_bool() ? NULL
                   : sea_malloc_safe(sizeof(struct aws_priority_queue_node));
     ((struct aws_priority_queue_node **)queue.backpointers.data)[b] =
         nd_bool() ? NULL
                   : sea_malloc_safe(sizeof(struct aws_priority_queue_node));
+#endif
   }
 
   /* save current state of the data structure */

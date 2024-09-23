@@ -1,4 +1,4 @@
 verify_options:
-  horn-bmc-tactic: smtfd
+  # horn-bmc-tactic: smtfd
   bound: @MAX_BUFFER_SIZE@
  

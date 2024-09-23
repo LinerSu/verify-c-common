@@ -3,6 +3,7 @@
 #include <sea_allocators.h>
 #include <seahorn/seahorn.h>
 #include <string_helper.h>
+#include <utils.h>
 
 static void sea_init_str(char *str, size_t str_len);
 
@@ -42,6 +43,7 @@ struct aws_string *ensure_string_is_allocated_nondet_length(void) {
 
 // This takes in a ptr to an allocated piece of memory with the desired
 // string len and initializes the string.
+#ifndef __CRAB__
 static void sea_init_str(char *str, size_t str_len) {
   str[str_len] = '\0';
   size_t max_string_len = sea_max_string_len();
@@ -51,6 +53,21 @@ static void sea_init_str(char *str, size_t str_len) {
     }
   }
 }
+#else
+static void sea_init_str(char *str, size_t str_len) {
+  for (size_t j = 0; j < str_len; j++) {
+    char c = nd_char();
+    assume(c != '\0');
+    str[j] = c;
+  }
+  // size_t idx = nd_size_t();
+  // assume(idx < str_len);
+  // char c = nd_char();
+  // assume(c != '\0');
+  // str[idx] = c;
+  str[str_len] = '\0';
+}
+#endif
 
 static const char *_ensure_c_str_is_nd_allocated(size_t max_size, size_t *len,
                                                  bool safe) {
@@ -59,7 +76,9 @@ static const char *_ensure_c_str_is_nd_allocated(size_t max_size, size_t *len,
   // allocate no more than sea_max_string_len() + 1
   assume(alloc_size > 0);
   assume(alloc_size <= max_size);
+#ifndef __CRAB__
   assume(max_size <= sea_max_string_len());
+#endif
 
   // this allocation never fails
   char *str;
