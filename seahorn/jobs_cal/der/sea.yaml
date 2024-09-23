@@ -1,0 +1,6 @@
+verify_options:
+# stack allocation from a symbolic starting point
+  bound: @MAX_SIZE@
+  # horn-explicit-sp0: true
+# array for memory
+  horn-bv2-lambdas: false

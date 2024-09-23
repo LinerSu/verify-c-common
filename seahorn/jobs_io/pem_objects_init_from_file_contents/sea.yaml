@@ -1,0 +1,4 @@
+verify_options:
+  bound: @MAX_BUFFER_SIZE@
+# array for memory
+  horn-bv2-lambdas: false

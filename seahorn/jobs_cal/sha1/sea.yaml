@@ -1,0 +1,4 @@
+verify_options:
+  bound: @MAX_SIZE@
+  # horn-bmc-logic: QF_ABV
+  # horn-bmc-tactic: smtfd

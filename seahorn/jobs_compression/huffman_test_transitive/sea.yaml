@@ -1,0 +1,6 @@
+verify_options:
+  bound: @MAX_SIZE@
+  horn-bv2-word-size: 8
+# array for memory
+  horn-bv2-lambdas: false
+  horn-bv2-simplify: false
