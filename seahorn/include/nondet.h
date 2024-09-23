@@ -16,6 +16,7 @@
  * Non-determinstic functions 
  */
 extern NONDET_FN_ATTR bool nd_bool(void);
+extern NONDET_FN_ATTR char nd_char(void);
 extern NONDET_FN_ATTR int nd_int(void);
 extern NONDET_FN_ATTR size_t nd_size_t(void); 
 extern NONDET_FN_ATTR uint16_t nd_uint16_t(void);
