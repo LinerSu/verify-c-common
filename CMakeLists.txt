@@ -11,7 +11,7 @@ enable_testing()
 # To check for memory safety, set this option to OFF. Then our wrappers will be used instead that
 # check for memory safety and call builtin functions directly.
 option(SEA_LLVM_MEM_BUILTINS "Use LLVM builtins memcpy/memmove without memory safety checks" OFF)
-
+option(SEA_USE_LARGE_BOUNDS "Use Large Allocation Bounds" OFF)
 
 option(SEA_ENABLE_FUZZ "Enable fuzzing" OFF)
 option(SEA_ENABLE_CRAB "Enable Seahorn using Crab" OFF)
