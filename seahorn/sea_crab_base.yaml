@@ -34,7 +34,7 @@ verify_options:
 # lambdas for memory
   horn-bv2-lambdas: ''
 # use z3 simplifier during vcgen
-  horn-bv2-simplify: true
+  horn-bv2-simplify: ''
 # wide memory manager to track pointer sizes
   horn-bv2-extra-widemem: ''
 # intermediate results in human readable form for debugging
@@ -46,3 +46,6 @@ verify_options:
   horn-stats: true
 # ignore converting function with prefix sea_nd to nd function
   ignore-define-verifier-fns: ''
+  seapp-crab-check-is-deref: true
+  seapp-crab-liveness: ''
+  # horn-opsem-max-symb-alloc: 8192
