@@ -8,7 +8,7 @@ import argparse
 from get_exper_brunch_stat import *
 BUILDABSPATH = os.path.abspath('../build/')
 DATAABSPATH = os.path.abspath('../') + "/data"
-SEAHORN_ROOT = '/home/yusen/seawork/seahorn/build/run'  # Put your seahorn root dir here
+SEAHORN_ROOT = '/home/yusen/seawork/seahorn/build_z3_fixed/run'  # Put your seahorn root dir here
 FILE_DICT = {
     "": "seahorn.csv",
     "--vac": "seahorn(vac).csv",
@@ -51,6 +51,7 @@ def make_new_cmake_conf():
     use_klee = "ON" if args.klee else "OFF"
     use_symbiotic = "ON" if args.symbiotic else "OFF"
     use_bleeding_edge = "ON" if args.bleed_edge else "OFF"
+    use_large_bounds = "ON" if args.large_bounds else "OFF"
     # use_crab = "ON" if "--crab" in extra else "OFF"
     if args.smack_parser:
         use_smack = "ON" if args.smack else "OFF"
@@ -62,6 +63,7 @@ def make_new_cmake_conf():
     return f'cmake -DSEA_LINK=llvm-link-{LLVM_VERSION} -DCMAKE_C_COMPILER=clang-{LLVM_VERSION}\
     -DCMAKE_CXX_COMPILER=clang++-{LLVM_VERSION} -DSEA_ENABLE_KLEE={use_klee} {smack_args}\
     -DSEA_WITH_BLEEDING_EDGE={use_bleeding_edge} -DSEA_ENABLE_CRAB=ON\
+    -DSEA_USE_LARGE_BOUNDS={use_large_bounds}\
     -DSEA_ENABLE_SYMBIOTIC={use_symbiotic} -DSEAHORN_ROOT={SEAHORN_ROOT} ../ -GNinja'
 
 
@@ -118,7 +120,8 @@ def run_ctest_for_seahorn():
         '/bin/bash',
         shell=True,
         stdin=subprocess.PIPE,
-        stdout=get_output_level())
+        stdout=get_output_level(),
+        stderr=subprocess.PIPE)
     _ = process.communicate(cddir.encode())
     collect_res_from_ctest(extra_to_filename(extra))
     collect_stat_from_ctest_log(extra_to_filename(extra, suffix='.brunch.csv'),
@@ -240,6 +243,7 @@ if __name__ == "__main__":
     parser.add_argument('--debug', action='store_true', default=False)
     parser.add_argument('--timeout', type=int, default=2000,
                         help='Seconds before timeout for each test')
+    parser.add_argument('--large_bounds', action='store_true', default=False)
     subparsers = parser.add_subparsers(
         help='sub-commands help', dest="smack_parser")
     smack_parser = subparsers.add_parser('smack', help="smack help")

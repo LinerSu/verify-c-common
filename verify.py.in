@@ -15,6 +15,7 @@ SEAHORN_ROOT = "@SEAHORN_ROOT@"
 ASSERT_ERROR_PREFIX = r'^Error: assertion failed'
 # the plan is to have two sets, vac error and info and put filepath:linenumbers) into both
 VACUITY_CHECK_RE = r'^(?P<stream>Info|Error).*(?P<what>vacuity).*(?P<result>passed|failed).*sat\) (?P<debuginfo>.*)$'
+NO_TASK_PREFIX = r'^WARNING: (no assertion was found|The program has no main)'
 
 def check_vacuity(line, passed_set, failed_set):
     m = re.match(VACUITY_CHECK_RE, line)
@@ -159,6 +160,8 @@ def main(argv):
 
                 # checks after this line are mutually exclusive
                 if not found_expected and args.expect is not None and line.strip() == args.expect:
+                    found_expected = True
+                elif re.match(NO_TASK_PREFIX, line):
                     found_expected = True
                 elif re.match(ASSERT_ERROR_PREFIX, line):
                     found_error = True

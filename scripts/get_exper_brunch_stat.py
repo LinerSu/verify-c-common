@@ -25,8 +25,8 @@ def read_brunchstat_from_log(log_file_name):
             # remove _unsat_test
             cur_test = test_name[:-12]
             new_test_data['job_name'] = cur_test
-            new_test_data['pp_loc'] = get_loc_info(cur_test, True)
-            new_test_data['opsem_loc'] = get_loc_info(cur_test, False)
+            # new_test_data['pp_loc'] = get_loc_info(cur_test, True)
+            # new_test_data['opsem_loc'] = get_loc_info(cur_test, False)
             data.append(new_test_data)
         elif line.startswith("BRUNCH_STAT"):
             stat = line.split()
@@ -41,25 +41,28 @@ def read_brunchstat_from_log(log_file_name):
 
 def get_loc_info(file_name, is_pp):
     # Directory where the files are located
-    directory_path = "/tmp/verify-c-common/"
+    directory_path = "/tmp/verify-c-common"
 
-    ir_name = f"{file_name}.ir.peel.fat.pp.ms.bc" if is_pp else f"{file_name}.ir.peel.fat.pp.ms.crab.o.ul.cut.o.bc"
+    ir_name = f"{file_name}.ir.fat.pp.ms.bc" if is_pp else f"{file_name}.ir.fat.pp.ms.crab.o.ul.cut.o.bc"
 
     # Construct the full path to the file with its pattern
     full_path = os.path.join(directory_path, ir_name)
     
     # Get the LOC of the file
     LOC = 'n/a'
-    with open(full_path, 'r') as file:
-        lines = file.readlines()
-        start = False
-        for line in lines:
-            if start:
-                LOC += 1
-            if '@main' in line:
-                LOC = 0
-                start = True
-    return LOC
+    try:
+        with open(full_path, 'r') as file:
+            lines = file.readlines()
+            start = False
+            for line in lines:
+                if start:
+                    LOC += 1
+                if '@main' in line:
+                    LOC = 0
+                    start = True
+        return LOC
+    except FileNotFoundError:
+        return LOC
 
 def read_symbiotic_bruchstat_from_log(log_file_name, xml_file_dir, time_out):
     log_file = open(log_file_name, 'r')
