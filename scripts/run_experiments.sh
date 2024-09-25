@@ -20,6 +20,8 @@ if [ ! -d "$VMCAI_RES_DIR" ]; then
     mkdir -p "$VMCAI_RES_DIR"
 fi
 
+mkdir -p /tmp/results/case_study
+
 DIVIDER="\n================================================\n\n"
 SEABMC="SEABMC"
 AIBMC="AI4BMC"
