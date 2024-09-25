@@ -1,15 +1,3 @@
-[submodule "aws-c-common"]
-	path = aws-c-common
-	url = https://github.com/awslabs/aws-c-common
-[submodule "aws-c-cal"]
-	path = aws-c-cal
-	url = https://github.com/awslabs/aws-c-cal
-[submodule "aws-c-compression"]
-	path = aws-c-compression
-	url = https://github.com/awslabs/aws-c-compression
-[submodule "aws-c-io"]
-	path = aws-c-io
-	url = https://github.com/awslabs/aws-c-io
 [submodule "aws-c-sdkutils"]
 	path = aws-c-sdkutils
 	url = https://github.com/awslabs/aws-c-sdkutils
