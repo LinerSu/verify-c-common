@@ -1,0 +1,50 @@
+diff --git a/source/huffman.c b/source/huffman.c
+index 5a898e1..916e8af 100644
+--- a/source/huffman.c
++++ b/source/huffman.c
+@@ -4,6 +4,11 @@
+  */
+ 
+ #include <aws/compression/huffman.h>
++#ifdef __SEAHORN__
++#    include <config.h>
++#    include <nondet.h>
++#    include <seahorn/seahorn.h>
++#endif
+ 
+ #define BITSIZEOF(val) (sizeof(val) * 8)
+ 
+diff --git a/source/huffman_testing.c b/source/huffman_testing.c
+index 67d17a2..471ba4a 100644
+--- a/source/huffman_testing.c
++++ b/source/huffman_testing.c
+@@ -11,6 +11,11 @@
+ 
+ #include <aws/common/byte_buf.h>
+ #include <aws/common/common.h>
++#ifdef __SEAHORN__
++#    include <config.h>
++#    include <nondet.h>
++#    include <seahorn/seahorn.h>
++#endif
+ 
+ int huffman_test_transitive(
+     struct aws_huffman_symbol_coder *coder,
+@@ -92,9 +97,17 @@ int huffman_test_transitive_chunked(
+     memset(output_buffer, 0, size);
+ 
+     struct aws_byte_cursor to_encode = aws_byte_cursor_from_array(input, size);
++#ifdef __SEAHORN__
++    struct aws_byte_buf intermediate_buf = aws_byte_buf_from_empty_array(intermediate_buffer, intermediate_buffer_size);
++#else
+     struct aws_byte_buf intermediate_buf = aws_byte_buf_from_empty_array(intermediate_buffer, (size_t)-1);
++#endif
+     intermediate_buf.capacity = 0;
++#ifdef __SEAHORN__
++    struct aws_byte_buf output_buf = aws_byte_buf_from_empty_array(output_buffer, size);
++#else
+     struct aws_byte_buf output_buf = aws_byte_buf_from_empty_array(output_buffer, (size_t)-1);
++#endif
+     output_buf.capacity = 0;
+ 
+     int result = AWS_OP_SUCCESS;

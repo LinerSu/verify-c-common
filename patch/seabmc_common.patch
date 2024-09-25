@@ -1,0 +1,184 @@
+diff --git a/include/aws/common/atomics_gnu.inl b/include/aws/common/atomics_gnu.inl
+index 711b7795..8e7e885b 100644
+--- a/include/aws/common/atomics_gnu.inl
++++ b/include/aws/common/atomics_gnu.inl
+@@ -137,6 +137,24 @@ bool aws_atomic_compare_exchange_int_explicit(
+         aws_atomic_priv_xlate_order(order_failure));
+ }
+ 
++#ifdef __SEAHORN__
++/// @brief Compare the content pointed by \p ptr with the expected value by \p expected
++/// @param[in,out] ptr the pointer points to the content for comparison
++/// @param[in] expected if contents are not same, updates expected value
++/// @param[in] desired value to store in the memory if it contains the expected value.
++AWS_STATIC_IMPL
++bool simple_compare_exchange(void *volatile *ptr, void **expected,
++                             void *desired) {
++    if (*ptr == *expected) {
++        *ptr = desired;
++        return true;
++    } else {
++        *expected = *ptr;
++        return false;
++    }
++}
++#endif
++
+ /**
+  * Atomically compares *var to *expected; if they are equal, atomically sets *var = desired. Otherwise, *expected is set
+  * to the value in *var. On success, the memory ordering used was order_success; otherwise, it was order_failure.
+@@ -149,6 +167,10 @@ bool aws_atomic_compare_exchange_ptr_explicit(
+     void *desired,
+     enum aws_memory_order order_success,
+     enum aws_memory_order order_failure) {
++    #ifdef __SEAHORN__
++    return simple_compare_exchange(&AWS_ATOMIC_VAR_PTRVAL(var), expected,
++                                    desired);
++    #else
+     return __atomic_compare_exchange_n(
+         &AWS_ATOMIC_VAR_PTRVAL(var),
+         expected,
+@@ -156,6 +178,7 @@ bool aws_atomic_compare_exchange_ptr_explicit(
+         false,
+         aws_atomic_priv_xlate_order(order_success),
+         aws_atomic_priv_xlate_order(order_failure));
++    #endif
+ }
+ 
+ /**
+diff --git a/include/aws/common/logging.h b/include/aws/common/logging.h
+index 00999647..2c5f0ab0 100644
+--- a/include/aws/common/logging.h
++++ b/include/aws/common/logging.h
+@@ -142,14 +142,19 @@ struct aws_logger {
+  * The base formatted logging macro that all other formatted logging macros resolve to.
+  * Checks for a logger and filters based on log level.
+  */
+-#define AWS_LOGF(log_level, subject, ...)                                                                              \
+-    do {                                                                                                               \
+-        AWS_ASSERT(log_level > 0);                                                                                     \
+-        struct aws_logger *logger = aws_logger_get();                                                                  \
+-        if (logger != NULL && logger->vtable->get_log_level(logger, (subject)) >= (log_level)) {                       \
+-            logger->vtable->log(logger, log_level, subject, __VA_ARGS__);                                              \
+-        }                                                                                                              \
+-    } while (0)
++
++#ifdef __SEAHORN__
++#    define AWS_LOGF(log_level, subject, ...)
++#else
++#    define AWS_LOGF(log_level, subject, ...)                                                                          \
++        do {                                                                                                           \
++            AWS_ASSERT(log_level > 0);                                                                                 \
++            struct aws_logger *logger = aws_logger_get();                                                              \
++            if (logger != NULL && logger->vtable->get_log_level(logger, (subject)) >= (log_level)) {                   \
++                logger->vtable->log(logger, log_level, subject, __VA_ARGS__);                                          \
++            }                                                                                                          \
++        } while (0)
++#endif
+ /**
+  * Unconditional logging macro that takes a logger and does not do a level check or a null check.  Intended for
+  * situations when you need to log many things and do a single manual level check before beginning.
+diff --git a/source/posix/condition_variable.c b/source/posix/cond_variable.c
+similarity index 100%
+rename from source/posix/condition_variable.c
+rename to source/posix/cond_variable.c
+diff --git a/source/posix/thread.c b/source/posix/thread.c
+index 0b32bebd..106a493b 100644
+--- a/source/posix/thread.c
++++ b/source/posix/thread.c
+@@ -30,6 +30,10 @@ typedef cpuset_t cpu_set_t;
+ #    include <pthread_np.h>
+ #endif
+ 
++#ifdef __SEAHORN__
++#    define AWS_AFFINITY_METHOD 2
++#endif
++
+ #if !defined(AWS_AFFINITY_METHOD)
+ #    error "Must provide a method for setting thread affinity"
+ #endif
+@@ -240,7 +244,12 @@ void aws_thread_call_once(aws_thread_once *flag, void (*call_once)(void *), void
+ }
+ 
+ int aws_thread_init(struct aws_thread *thread, struct aws_allocator *allocator) {
++#ifdef __SEAHORN__
++    thread->allocator = allocator;
++    thread->detach_state = AWS_THREAD_NOT_CREATED;
++#else
+     *thread = (struct aws_thread){.allocator = allocator, .detach_state = AWS_THREAD_NOT_CREATED};
++#endif
+ 
+     return AWS_OP_SUCCESS;
+ }
+@@ -318,7 +327,13 @@ int aws_thread_launch(
+         }
+     }
+ 
++#ifdef __SEAHORN__
++    wrapper->thread_copy.allocator = thread->allocator;
++    wrapper->thread_copy.detach_state = thread->detach_state;
++    wrapper->thread_copy.thread_id = thread->thread_id;
++#else
+     wrapper->thread_copy = *thread;
++#endif
+     wrapper->allocator = thread->allocator;
+     wrapper->func = func;
+     wrapper->arg = arg;
+diff --git a/source/priority_queue.c b/source/priority_queue.c
+index fcea718b..8dac164d 100644
+--- a/source/priority_queue.c
++++ b/source/priority_queue.c
+@@ -7,9 +7,15 @@
+ 
+ #include <string.h>
+ 
+-#define PARENT_OF(index) (((index)&1) ? (index) >> 1 : (index) > 1 ? ((index)-2) >> 1 : 0)
+-#define LEFT_OF(index) (((index) << 1) + 1)
+-#define RIGHT_OF(index) (((index) << 1) + 2)
++#ifdef __SEAHORN__
++#    define PARENT_OF(index) (((index) % 2 != 0) ? ((index) / 2) : ((index) > 1 ? ((index)-2) / 2 : 0))
++#    define LEFT_OF(index) (2 * (index) + 1)
++#    define RIGHT_OF(index) (2 * (index) + 2)
++#else
++#    define PARENT_OF(index) (((index)&1) ? (index) >> 1 : (index) > 1 ? ((index)-2) >> 1 : 0)
++#    define LEFT_OF(index) (((index) << 1) + 1)
++#    define RIGHT_OF(index) (((index) << 1) + 2)
++#endif
+ 
+ static void s_swap(struct aws_priority_queue *queue, size_t a, size_t b) {
+     AWS_PRECONDITION(aws_priority_queue_is_valid(queue));
+diff --git a/source/ring_buffer.c b/source/ring_buffer.c
+index bcc8ffaa..42579c3b 100644
+--- a/source/ring_buffer.c
++++ b/source/ring_buffer.c
+@@ -58,7 +58,15 @@ void aws_ring_buffer_clean_up(struct aws_ring_buffer *ring_buf) {
+         aws_mem_release(ring_buf->allocator, ring_buf->allocation);
+     }
+ 
++#ifndef __SEAHORN__
+     AWS_ZERO_STRUCT(*ring_buf);
++#else
++    ring_buf->allocator = NULL;
++    ring_buf->allocation = NULL;
++    ring_buf->head.value = NULL;
++    ring_buf->tail.value = NULL;
++    ring_buf->allocation_end = NULL;
++#endif
+ }
+ 
+ int aws_ring_buffer_acquire(struct aws_ring_buffer *ring_buf, size_t requested_size, struct aws_byte_buf *dest) {
+@@ -247,7 +255,14 @@ void aws_ring_buffer_release(struct aws_ring_buffer *ring_buffer, struct aws_byt
+     AWS_PRECONDITION(aws_byte_buf_is_valid(buf));
+     AWS_PRECONDITION(s_buf_belongs_to_pool(ring_buffer, buf));
+     AWS_ATOMIC_STORE_TAIL_PTR(ring_buffer, buf->buffer + buf->capacity);
++#ifndef __SEAHORN__
+     AWS_ZERO_STRUCT(*buf);
++#else
++    buf->len = 0;
++    buf->capacity = 0;
++    buf->buffer = NULL;
++    buf->allocator = NULL;
++#endif
+     AWS_POSTCONDITION(aws_ring_buffer_is_valid(ring_buffer));
+ }
+ 

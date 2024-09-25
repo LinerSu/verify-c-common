@@ -1,0 +1,125 @@
+diff --git a/source/aws_profile.c b/source/aws_profile.c
+index 1128bf7..0a8c147 100644
+--- a/source/aws_profile.c
++++ b/source/aws_profile.c
+@@ -11,6 +11,9 @@
+ #include <aws/common/ref_count.h>
+ #include <aws/common/string.h>
+ #include <aws/sdkutils/aws_profile.h>
++#ifdef __SEAHORN__
++#    include <seahorn/seahorn.h>
++#endif
+ 
+ #define PROPERTIES_TABLE_DEFAULT_SIZE 4
+ #define PROFILE_TABLE_DEFAULT_SIZE 5
+@@ -250,6 +253,18 @@ struct aws_profile_property *aws_profile_property_new(
+     AWS_ZERO_STRUCT(*property);
+     property->allocator = allocator;
+ 
++#ifdef __SEAHORN__
++    if (aws_hash_table_init(
++            &property->sub_properties,
++            allocator,
++            0,
++            aws_hash_string,
++            aws_hash_callback_string_eq,
++            NULL,
++            NULL)) { // cannot resolve callback fun
++        goto on_error;
++    }
++#else
+     if (aws_hash_table_init(
+             &property->sub_properties,
+             allocator,
+@@ -260,6 +275,7 @@ struct aws_profile_property *aws_profile_property_new(
+             aws_hash_callback_string_destroy)) {
+         goto on_error;
+     }
++#endif
+ 
+     property->value = aws_string_new_from_array(allocator, value->ptr, value->len);
+     if (property->value == NULL) {
+@@ -478,7 +494,18 @@ struct aws_profile *aws_profile_new(
+     if (profile->name == NULL) {
+         goto cleanup;
+     }
+-
++#ifdef __SEAHORN__
++    if (aws_hash_table_init(
++            &profile->properties,
++            allocator,
++            PROPERTIES_TABLE_DEFAULT_SIZE,
++            aws_hash_string,
++            aws_hash_callback_string_eq,
++            NULL,    /* The key is owned by the value (and destroy cleans it up), so we don't have to */
++            NULL)) { // cannot resolve callback fun
++        goto cleanup;
++    }
++#else
+     if (aws_hash_table_init(
+             &profile->properties,
+             allocator,
+@@ -490,6 +517,7 @@ struct aws_profile *aws_profile_new(
+ 
+         goto cleanup;
+     }
++#endif
+ 
+     profile->allocator = allocator;
+     profile->has_profile_prefix = has_profile_prefix;
+@@ -774,7 +802,18 @@ struct aws_profile_collection *aws_profile_collection_new_from_merge(
+ 
+         merged->allocator = allocator;
+         merged->profile_source = AWS_PST_NONE;
+-
++#ifdef __SEAHORN__
++        if (aws_hash_table_init(
++                &merged->sections[i],
++                allocator,
++                max_profiles,
++                aws_hash_string,
++                aws_hash_callback_string_eq,
++                NULL,
++                NULL)) { // cannot resolve callback fun
++            goto cleanup;
++        }
++#else
+         if (aws_hash_table_init(
+                 &merged->sections[i],
+                 allocator,
+@@ -785,6 +824,7 @@ struct aws_profile_collection *aws_profile_collection_new_from_merge(
+                 s_profile_hash_table_value_destroy)) {
+             goto cleanup;
+         }
++#endif
+     }
+ 
+     if (config_profiles != NULL) {
+@@ -1243,6 +1283,19 @@ static struct aws_profile_collection *s_aws_profile_collection_new_internal(
+         (aws_simple_completion_callback *)s_aws_profile_collection_destroy_internal);
+ 
+     for (int i = 0; i < AWS_PROFILE_SECTION_TYPE_COUNT; i++) {
++#ifdef __SEAHORN__
++        sassert(allocator);
++        if (aws_hash_table_init(
++                &profile_collection->sections[i],
++                allocator,
++                PROFILE_TABLE_DEFAULT_SIZE,
++                aws_hash_string,
++                aws_hash_callback_string_eq,
++                NULL,    /* The key is owned by the value (and destroy cleans it up), so we don't have to */
++                NULL)) { // cannot resolve callback fun
++            goto cleanup;
++        }
++#else
+         if (aws_hash_table_init(
+                 &profile_collection->sections[i],
+                 allocator,
+@@ -1253,6 +1306,7 @@ static struct aws_profile_collection *s_aws_profile_collection_new_internal(
+                 s_profile_hash_table_value_destroy)) {
+             goto cleanup;
+         }
++#endif
+     }
+ 
+     struct aws_byte_cursor current_position = aws_byte_cursor_from_buf(buffer);

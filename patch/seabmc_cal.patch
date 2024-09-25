@@ -1,0 +1,738 @@
+diff --git a/source/darwin/securityframework_ecc.c b/source/darwin/securityframework_ecc.c
+index adedadd..b83e1a8 100644
+--- a/source/darwin/securityframework_ecc.c
++++ b/source/darwin/securityframework_ecc.c
+@@ -10,6 +10,13 @@
+ #include <Security/SecKey.h>
+ #include <Security/Security.h>
+ 
++#ifdef __SEAHORN__
++#    include <seahorn/seahorn.h>
++
++#    include <proof_allocators.h>
++#    include <utils.h>
++#endif
++
+ struct commoncrypto_ecc_key_pair {
+     struct aws_ecc_key_pair key_pair;
+     SecKeyRef priv_key_ref;
+diff --git a/source/der.c b/source/der.c
+index a7e7001..cab81ca 100644
+--- a/source/der.c
++++ b/source/der.c
+@@ -8,6 +8,14 @@
+ #include <aws/cal/cal.h>
+ #include <aws/common/byte_buf.h>
+ 
++#ifdef __SEAHORN__
++#    include <seahorn/seahorn.h>
++
++#    include <nondet.h>
++#    include <proof_allocators.h>
++#    include <utils.h>
++#endif
++
+ #ifdef _MSC_VER
+ #    pragma warning(push)
+ #    pragma warning(disable : 4204 4221) /* non-standard aggregate initializer warnings */
+@@ -426,6 +434,10 @@ int s_parse_cursor(struct aws_der_decoder *decoder, struct aws_byte_cursor cur)
+         }
+         /* if the last element was a container, expand it recursively to maintain order */
+         if (tlv.tag & AWS_DER_FORM_CONSTRUCTED) {
++#ifdef __SEAHORN__
++            // assume tag is not this case
++            break;
++#else
+             struct der_tlv *outer_container = decoder->container;
+             struct der_tlv *container = NULL;
+             aws_array_list_get_at_ptr(&decoder->tlvs, (void **)&container, decoder->tlvs.length - 1);
+@@ -440,6 +452,7 @@ int s_parse_cursor(struct aws_der_decoder *decoder, struct aws_byte_cursor cur)
+                 return aws_raise_error(AWS_ERROR_CAL_MALFORMED_ASN1_ENCOUNTERED);
+             }
+             decoder->container = outer_container; /* restore the container stack */
++#endif
+         }
+     }
+ 
+diff --git a/source/ecc.c b/source/ecc.c
+index ca944e0..45923e9 100644
+--- a/source/ecc.c
++++ b/source/ecc.c
+@@ -8,6 +8,15 @@
+ #include <aws/cal/private/der.h>
+ #include <aws/common/encoding.h>
+ 
++#ifdef __SEAHORN__
++#    include <seahorn/seahorn.h>
++
++#    include <byte_buf_helper.h>
++#    include <nondet.h>
++#    include <proof_allocators.h>
++#    include <utils.h>
++#endif
++
+ #define STATIC_INIT_BYTE_CURSOR(a, name)                                                                               \
+     static struct aws_byte_cursor s_##name = {                                                                         \
+         .ptr = (a),                                                                                                    \
+@@ -291,7 +300,14 @@ void aws_ecc_key_pair_release(struct aws_ecc_key_pair *key_pair) {
+         return;
+     }
+ 
++#ifdef __SEAHORN__
++    size_t *val = (size_t *)&AWS_ATOMIC_VAR_INTVAL(&key_pair->ref_count);
++    size_t old_val = *val;
++    *val -= 1;
++    size_t old_value = old_val;
++#else
+     size_t old_value = aws_atomic_fetch_sub(&key_pair->ref_count, 1);
++#endif
+ 
+     if (old_value == 1) {
+         s_aws_ecc_key_pair_destroy(key_pair);
+diff --git a/source/hash.c b/source/hash.c
+index 3789127..24423f4 100644
+--- a/source/hash.c
++++ b/source/hash.c
+@@ -4,6 +4,9 @@
+  */
+ #include <aws/cal/hash.h>
+ 
++#ifdef __SEAHORN__
++#    include <seahorn/seahorn.h>
++#endif
+ #ifndef BYO_CRYPTO
+ extern struct aws_hash *aws_sha256_default_new(struct aws_allocator *allocator);
+ extern struct aws_hash *aws_sha1_default_new(struct aws_allocator *allocator);
+@@ -24,15 +27,27 @@ static aws_hash_new_fn *s_md5_new_fn = aws_hash_new_abort;
+ #endif
+ 
+ struct aws_hash *aws_sha1_new(struct aws_allocator *allocator) {
++#ifdef __SEAHORN__
++    return aws_sha1_default_new(allocator);
++#else
+     return s_sha1_new_fn(allocator);
++#endif
+ }
+ 
+ struct aws_hash *aws_sha256_new(struct aws_allocator *allocator) {
++#ifdef __SEAHORN__
++    return aws_sha256_default_new(allocator);
++#else
+     return s_sha256_new_fn(allocator);
++#endif
+ }
+ 
+ struct aws_hash *aws_md5_new(struct aws_allocator *allocator) {
++#ifdef __SEAHORN__
++    return aws_md5_default_new(allocator);
++#else
+     return s_md5_new_fn(allocator);
++#endif
+ }
+ 
+ void aws_set_md5_new_fn(aws_hash_new_fn *fn) {
+diff --git a/source/hmac.c b/source/hmac.c
+index e504214..4f2c6df 100644
+--- a/source/hmac.c
++++ b/source/hmac.c
+@@ -20,7 +20,11 @@ static aws_hmac_new_fn *s_sha256_hmac_new_fn = aws_hmac_new_abort;
+ #endif
+ 
+ struct aws_hmac *aws_sha256_hmac_new(struct aws_allocator *allocator, const struct aws_byte_cursor *secret) {
++#ifdef __SEAHORN__
++    return aws_sha256_hmac_default_new(allocator, secret);
++#else
+     return s_sha256_hmac_new_fn(allocator, secret);
++#endif
+ }
+ 
+ void aws_set_sha256_hmac_new_fn(aws_hmac_new_fn *fn) {
+diff --git a/source/rsa.c b/source/rsa.c
+index f241071..afe76f2 100644
+--- a/source/rsa.c
++++ b/source/rsa.c
+@@ -7,6 +7,11 @@
+ #include <aws/cal/cal.h>
+ #include <aws/cal/hash.h>
+ #include <aws/cal/private/der.h>
++#ifdef __SEAHORN__
++#    include <proof_allocators.h>
++#    include <seahorn/seahorn.h>
++#    include <utils.h>
++#endif
+ 
+ typedef struct aws_rsa_key_pair *(
+     aws_rsa_key_pair_new_from_public_pkcs1_fn)(struct aws_allocator *allocator, struct aws_byte_cursor public_key);
+@@ -52,13 +57,13 @@ static aws_rsa_key_pair_new_from_private_pkcs1_fn *s_rsa_key_pair_new_from_priva
+ struct aws_rsa_key_pair *aws_rsa_key_pair_new_from_public_key_pkcs1(
+     struct aws_allocator *allocator,
+     struct aws_byte_cursor public_key) {
+-    return s_rsa_key_pair_new_from_public_key_pkcs1_fn(allocator, public_key);
++    return aws_rsa_key_pair_new_from_public_key_pkcs1_impl(allocator, public_key);
+ }
+ 
+ struct aws_rsa_key_pair *aws_rsa_key_pair_new_from_private_key_pkcs1(
+     struct aws_allocator *allocator,
+     struct aws_byte_cursor private_key) {
+-    return s_rsa_key_pair_new_from_private_key_pkcs1_fn(allocator, private_key);
++    return aws_rsa_key_pair_new_from_private_key_pkcs1_impl(allocator, private_key);
+ }
+ 
+ void aws_rsa_key_pair_base_clean_up(struct aws_rsa_key_pair *key_pair) {
+@@ -101,6 +106,43 @@ size_t aws_rsa_key_pair_max_encrypt_plaintext_size(
+     return 0;
+ }
+ 
++#ifdef __SEAHORN__
++int sea_rsa_encrypt(
++    const struct aws_rsa_key_pair *key_pair,
++    enum aws_rsa_encryption_algorithm algorithm,
++    struct aws_byte_cursor plaintext,
++    struct aws_byte_buf *out) {
++    return nd_int();
++}
++int sea_rsa_decrypt(
++    const struct aws_rsa_key_pair *key_pair,
++    enum aws_rsa_encryption_algorithm algorithm,
++    struct aws_byte_cursor ciphertext,
++    struct aws_byte_buf *out) {
++    return nd_int();
++}
++int sea_rsa_sign(
++    const struct aws_rsa_key_pair *key_pair,
++    enum aws_rsa_signature_algorithm algorithm,
++    struct aws_byte_cursor digest,
++    struct aws_byte_buf *out) {
++    return nd_int();
++}
++int sea_rsa_verify(
++    const struct aws_rsa_key_pair *key_pair,
++    enum aws_rsa_signature_algorithm algorithm,
++    struct aws_byte_cursor digest,
++    struct aws_byte_cursor signature) {
++    return nd_int();
++}
++static struct aws_rsa_key_vtable s_rsa_key_pair_vtable = {
++    .encrypt = sea_rsa_encrypt,
++    .decrypt = sea_rsa_decrypt,
++    .sign = sea_rsa_sign,
++    .verify = sea_rsa_verify,
++};
++#endif
++
+ int aws_rsa_key_pair_encrypt(
+     const struct aws_rsa_key_pair *key_pair,
+     enum aws_rsa_encryption_algorithm algorithm,
+@@ -114,7 +156,11 @@ int aws_rsa_key_pair_encrypt(
+         return aws_raise_error(AWS_ERROR_CAL_BUFFER_TOO_LARGE_FOR_ALGORITHM);
+     }
+ 
++#ifdef __SEAHORN__
++    return sea_rsa_encrypt(key_pair, algorithm, plaintext, out);
++#else
+     return key_pair->vtable->encrypt(key_pair, algorithm, plaintext, out);
++#endif
+ }
+ 
+ AWS_CAL_API int aws_rsa_key_pair_decrypt(
+@@ -130,7 +176,11 @@ AWS_CAL_API int aws_rsa_key_pair_decrypt(
+         return aws_raise_error(AWS_ERROR_INVALID_ARGUMENT);
+     }
+ 
++#ifdef __SEAHORN__
++    return sea_rsa_decrypt(key_pair, algorithm, ciphertext, out);
++#else
+     return key_pair->vtable->decrypt(key_pair, algorithm, ciphertext, out);
++#endif
+ }
+ 
+ int aws_rsa_key_pair_sign_message(
+@@ -150,7 +200,11 @@ int aws_rsa_key_pair_sign_message(
+         return aws_raise_error(AWS_ERROR_INVALID_ARGUMENT);
+     }
+ 
++#ifdef __SEAHORN__
++    return sea_rsa_sign(key_pair, algorithm, digest, out);
++#else
+     return key_pair->vtable->sign(key_pair, algorithm, digest, out);
++#endif
+ }
+ 
+ int aws_rsa_key_pair_verify_signature(
+@@ -160,7 +214,11 @@ int aws_rsa_key_pair_verify_signature(
+     struct aws_byte_cursor signature) {
+     AWS_PRECONDITION(key_pair);
+ 
++#ifdef __SEAHORN__
++    return sea_rsa_verify(key_pair, algorithm, digest, signature);
++#else
+     return key_pair->vtable->verify(key_pair, algorithm, digest, signature);
++#endif
+ }
+ 
+ size_t aws_rsa_key_pair_block_length(const struct aws_rsa_key_pair *key_pair) {
+diff --git a/source/unix/openssl_rsa.c b/source/unix/openssl_rsa.c
+index fb70cd5..1b5093a 100644
+--- a/source/unix/openssl_rsa.c
++++ b/source/unix/openssl_rsa.c
+@@ -361,12 +361,16 @@ on_error:
+     return AWS_OP_ERR;
+ }
+ 
++#ifdef __SEAHORN__
++extern struct aws_rsa_key_vtable s_rsa_key_pair_vtable;
++#else
+ static struct aws_rsa_key_vtable s_rsa_key_pair_vtable = {
+     .encrypt = s_rsa_encrypt,
+     .decrypt = s_rsa_decrypt,
+     .sign = s_rsa_sign,
+     .verify = s_rsa_verify,
+ };
++#endif
+ 
+ struct aws_rsa_key_pair *aws_rsa_key_pair_new_from_private_key_pkcs1_impl(
+     struct aws_allocator *allocator,
+@@ -381,22 +385,30 @@ struct aws_rsa_key_pair *aws_rsa_key_pair_new_from_private_key_pkcs1_impl(
+     RSA *rsa = NULL;
+     EVP_PKEY *private_key = NULL;
+ 
++#ifndef __SEAHORN__
+     if (d2i_RSAPrivateKey(&rsa, (const uint8_t **)&key.ptr, key.len) == NULL) {
+         aws_raise_error(AWS_ERROR_CAL_CRYPTO_OPERATION_FAILED);
+         goto on_error;
+     }
++#endif
+ 
++#ifndef __SEAHORN__
+     private_key = EVP_PKEY_new();
+     if (private_key == NULL || EVP_PKEY_assign_RSA(private_key, rsa) == 0) {
+         RSA_free(rsa);
+         aws_raise_error(AWS_ERROR_CAL_CRYPTO_OPERATION_FAILED);
+         goto on_error;
+     }
++#endif
+ 
+     key_pair_impl->key = private_key;
+ 
+     key_pair_impl->base.vtable = &s_rsa_key_pair_vtable;
++#ifdef __SEAHORN__
++    key_pair_impl->base.key_size_in_bits = 0;
++#else
+     key_pair_impl->base.key_size_in_bits = EVP_PKEY_bits(key_pair_impl->key);
++#endif
+ 
+     return &key_pair_impl->base;
+ 
+@@ -422,6 +434,7 @@ struct aws_rsa_key_pair *aws_rsa_key_pair_new_from_public_key_pkcs1_impl(
+     RSA *rsa = NULL;
+     EVP_PKEY *public_key = NULL;
+ 
++#ifndef __SEAHORN__
+     if (d2i_RSAPublicKey(&rsa, (const uint8_t **)&key.ptr, key.len) == NULL) {
+         aws_raise_error(AWS_ERROR_CAL_CRYPTO_OPERATION_FAILED);
+         goto on_error;
+@@ -433,11 +446,16 @@ struct aws_rsa_key_pair *aws_rsa_key_pair_new_from_public_key_pkcs1_impl(
+         aws_raise_error(AWS_ERROR_CAL_CRYPTO_OPERATION_FAILED);
+         goto on_error;
+     }
++#endif
+ 
+     key_pair_impl->key = public_key;
+ 
+     key_pair_impl->base.vtable = &s_rsa_key_pair_vtable;
++#ifdef __SEAHORN__
++    key_pair_impl->base.key_size_in_bits = 0;
++#else
+     key_pair_impl->base.key_size_in_bits = EVP_PKEY_bits(key_pair_impl->key);
++#endif
+ 
+     return &key_pair_impl->base;
+ 
+diff --git a/source/unix/opensslcrypto_ecc.c b/source/unix/opensslcrypto_ecc.c
+index f8d3331..ab92a71 100644
+--- a/source/unix/opensslcrypto_ecc.c
++++ b/source/unix/opensslcrypto_ecc.c
+@@ -13,6 +13,14 @@
+ #include <openssl/ecdsa.h>
+ #include <openssl/obj_mac.h>
+ 
++#ifdef __SEAHORN__
++#    include <seahorn/seahorn.h>
++
++#    include <nondet.h>
++#    include <proof_allocators.h>
++#    include <utils.h>
++#endif
++
+ struct libcrypto_ecc_key {
+     struct aws_ecc_key_pair key_pair;
+     EC_KEY *ec_key;
+@@ -53,6 +61,9 @@ static int s_sign_payload(
+     struct libcrypto_ecc_key *libcrypto_key_pair = key_pair->impl;
+ 
+     unsigned int signature_size = signature_output->capacity - signature_output->len;
++#ifdef __SEAHORN__
++    int ret_val = nd_int();
++#else
+     int ret_val = ECDSA_sign(
+         0,
+         hash->ptr,
+@@ -60,6 +71,7 @@ static int s_sign_payload(
+         signature_output->buffer + signature_output->len,
+         &signature_size,
+         libcrypto_key_pair->ec_key);
++#endif
+     signature_output->len += signature_size;
+ 
+     return ret_val == 1 ? AWS_OP_SUCCESS : aws_raise_error(AWS_ERROR_INVALID_ARGUMENT);
+@@ -71,15 +83,23 @@ static int s_verify_payload(
+     const struct aws_byte_cursor *signature) {
+     struct libcrypto_ecc_key *libcrypto_key_pair = key_pair->impl;
+ 
++#ifdef __SEAHORN__
++    return nd_int();
++#else
+     return ECDSA_verify(0, hash->ptr, hash->len, signature->ptr, signature->len, libcrypto_key_pair->ec_key) == 1
+                ? AWS_OP_SUCCESS
+                : aws_raise_error(AWS_ERROR_CAL_SIGNATURE_VALIDATION_FAILED);
++#endif
+ }
+ 
+ static size_t s_signature_length(const struct aws_ecc_key_pair *key_pair) {
+     struct libcrypto_ecc_key *libcrypto_key_pair = key_pair->impl;
+ 
++#ifdef __SEAHORN__
++    return nd_size_t();
++#else
+     return ECDSA_size(libcrypto_key_pair->ec_key);
++#endif
+ }
+ 
+ static int s_fill_in_public_key_info(
+@@ -122,6 +142,41 @@ clean_up:
+     return ret_val;
+ }
+ 
++#ifdef __SEAHORN__
++static int s_derive_public_key(struct aws_ecc_key_pair *key_pair) {
++    struct libcrypto_ecc_key *libcrypto_key_pair = key_pair->impl;
++
++    /* we already have a public key, just lie and tell them we succeeded */
++    if (!libcrypto_key_pair->key_pair.priv_d.buffer) {
++        return aws_raise_error(AWS_ERROR_INVALID_STATE);
++    }
++    if (libcrypto_key_pair->key_pair.pub_x.len) {
++        return AWS_OP_SUCCESS;
++    }
++
++    int ret_val = AWS_OP_ERR;
++
++    size_t x_coor_size = nd_size_t();
++    assume(x_coor_size < MAX_BUFFER_SIZE);
++    size_t y_coor_size = nd_size_t();
++    assume(y_coor_size < MAX_BUFFER_SIZE);
++
++    if (aws_byte_buf_init(&libcrypto_key_pair->key_pair.pub_x, libcrypto_key_pair->key_pair.allocator, x_coor_size)) {
++        return AWS_OP_ERR;
++    }
++
++    if (aws_byte_buf_init(&libcrypto_key_pair->key_pair.pub_y, libcrypto_key_pair->key_pair.allocator, y_coor_size)) {
++        return AWS_OP_ERR;
++    }
++    memhavoc(libcrypto_key_pair->key_pair.pub_x.buffer, x_coor_size);
++    memhavoc(libcrypto_key_pair->key_pair.pub_y.buffer, y_coor_size);
++
++    libcrypto_key_pair->key_pair.pub_x.len = x_coor_size;
++    libcrypto_key_pair->key_pair.pub_y.len = y_coor_size;
++
++    return AWS_OP_SUCCESS;
++}
++#else
+ static int s_derive_public_key(struct aws_ecc_key_pair *key_pair) {
+     struct libcrypto_ecc_key *libcrypto_key_pair = key_pair->impl;
+ 
+@@ -148,6 +203,7 @@ static int s_derive_public_key(struct aws_ecc_key_pair *key_pair) {
+     EC_POINT_free(point);
+     return ret_val;
+ }
++#endif
+ 
+ static struct aws_ecc_key_pair_vtable vtable = {
+     .sign_message = s_sign_payload,
+@@ -171,7 +227,11 @@ struct aws_ecc_key_pair *aws_ecc_key_pair_new_from_private_key_impl(
+ 
+     struct libcrypto_ecc_key *key_impl = aws_mem_calloc(allocator, 1, sizeof(struct libcrypto_ecc_key));
+ 
++#ifdef __SEAHORN__
++    key_impl->ec_key = NULL;
++#else
+     key_impl->ec_key = EC_KEY_new_by_curve_name(s_curve_name_to_nid(curve_name));
++#endif
+     key_impl->key_pair.curve_name = curve_name;
+     key_impl->key_pair.allocator = allocator;
+     key_impl->key_pair.vtable = &vtable;
+@@ -179,6 +239,7 @@ struct aws_ecc_key_pair *aws_ecc_key_pair_new_from_private_key_impl(
+     aws_atomic_init_int(&key_impl->key_pair.ref_count, 1);
+     aws_byte_buf_init_copy_from_cursor(&key_impl->key_pair.priv_d, allocator, *priv_key);
+ 
++#ifndef __SEAHORN__
+     BIGNUM *priv_key_num = BN_bin2bn(key_impl->key_pair.priv_d.buffer, key_impl->key_pair.priv_d.len, NULL);
+     if (!EC_KEY_set_private_key(key_impl->ec_key, priv_key_num)) {
+         AWS_LOGF_ERROR(AWS_LS_CAL_ECC, "Failed to set openssl private key");
+@@ -188,6 +249,7 @@ struct aws_ecc_key_pair *aws_ecc_key_pair_new_from_private_key_impl(
+         return NULL;
+     }
+     BN_free(priv_key_num);
++#endif
+     return &key_impl->key_pair;
+ }
+ 
+@@ -242,7 +304,11 @@ struct aws_ecc_key_pair *aws_ecc_key_pair_new_from_public_key_impl(
+         return NULL;
+     }
+ 
++#ifdef __SEAHORN__
++    key_impl->ec_key = NULL;
++#else
+     key_impl->ec_key = EC_KEY_new_by_curve_name(s_curve_name_to_nid(curve_name));
++#endif
+     key_impl->key_pair.curve_name = curve_name;
+     key_impl->key_pair.allocator = allocator;
+     key_impl->key_pair.vtable = &vtable;
+@@ -259,6 +325,7 @@ struct aws_ecc_key_pair *aws_ecc_key_pair_new_from_public_key_impl(
+         return NULL;
+     }
+ 
++#ifndef __SEAHORN__
+     pub_x_num = BN_bin2bn(public_key_x->ptr, public_key_x->len, NULL);
+     pub_y_num = BN_bin2bn(public_key_y->ptr, public_key_y->len, NULL);
+ 
+@@ -276,6 +343,7 @@ struct aws_ecc_key_pair *aws_ecc_key_pair_new_from_public_key_impl(
+     EC_POINT_free(point);
+     BN_free(pub_x_num);
+     BN_free(pub_y_num);
++#endif
+ 
+     return &key_impl->key_pair;
+ 
+@@ -303,7 +371,7 @@ struct aws_ecc_key_pair *aws_ecc_key_pair_new_from_asn1(
+ 
+     struct aws_ecc_key_pair *key = NULL;
+     struct aws_der_decoder *decoder = aws_der_decoder_new(allocator, *encoded_keys);
+-
++    sassert(allocator);
+     if (!decoder) {
+         return NULL;
+     }
+@@ -316,17 +384,22 @@ struct aws_ecc_key_pair *aws_ecc_key_pair_new_from_asn1(
+     if (aws_der_decoder_load_ecc_key_pair(decoder, &pub_x, &pub_y, &priv_d, &curve_name)) {
+         goto error;
+     }
++    key = aws_ecc_key_pair_new_from_public_key(allocator, curve_name, &pub_x, &pub_y);
++    sassert(allocator);
++    return key;
+ 
+     if (priv_d.ptr) {
+         struct libcrypto_ecc_key *key_impl = aws_mem_calloc(allocator, 1, sizeof(struct libcrypto_ecc_key));
+         key_impl->key_pair.curve_name = curve_name;
+         /* as awkward as it seems, there's not a great way to manually set the public key, so let openssl just parse
+          * the der document manually now that we know what parts are what. */
++#ifndef __SEAHORN__
+         if (!d2i_ECPrivateKey(&key_impl->ec_key, (const unsigned char **)&encoded_keys->ptr, encoded_keys->len)) {
+             aws_mem_release(allocator, key_impl);
+             aws_raise_error(AWS_ERROR_CAL_MISSING_REQUIRED_KEY_COMPONENT);
+             goto error;
+         }
++#endif
+ 
+         key_impl->key_pair.allocator = allocator;
+         key_impl->key_pair.vtable = &vtable;
+diff --git a/source/unix/opensslcrypto_hash.c b/source/unix/opensslcrypto_hash.c
+index 7ad284d..4555eba 100644
+--- a/source/unix/opensslcrypto_hash.c
++++ b/source/unix/opensslcrypto_hash.c
+@@ -8,6 +8,13 @@
+ #include <openssl/evp.h>
+ #include <openssl/sha.h>
+ 
++#ifdef __SEAHORN__
++#    include <seahorn/seahorn.h>
++
++#    include <proof_allocators.h>
++#    include <utils.h>
++#endif
++
+ static void s_destroy(struct aws_hash *hash);
+ static int s_update(struct aws_hash *hash, const struct aws_byte_cursor *to_hash);
+ static int s_finalize(struct aws_hash *hash, struct aws_byte_buf *output);
+@@ -41,11 +48,12 @@ static void s_destroy(struct aws_hash *hash) {
+         return;
+     }
+ 
++#ifndef __SEAHORN__
+     EVP_MD_CTX *ctx = hash->impl;
+     if (ctx != NULL) {
+         g_aws_openssl_evp_md_ctx_table->free_fn(ctx);
+     }
+-
++#endif
+     aws_mem_release(hash->allocator, hash);
+ }
+ 
+@@ -88,6 +96,9 @@ struct aws_hash *aws_sha256_default_new(struct aws_allocator *allocator) {
+     hash->allocator = allocator;
+     hash->vtable = &s_sha256_vtable;
+     hash->digest_size = AWS_SHA256_LEN;
++#ifdef __SEAHORN__
++    EVP_MD_CTX *ctx = NULL;
++#else
+     EVP_MD_CTX *ctx = g_aws_openssl_evp_md_ctx_table->new_fn();
+     hash->impl = ctx;
+     hash->good = true;
+@@ -103,6 +114,7 @@ struct aws_hash *aws_sha256_default_new(struct aws_allocator *allocator) {
+         aws_raise_error(AWS_ERROR_UNKNOWN);
+         return NULL;
+     }
++#endif
+ 
+     return hash;
+ }
+@@ -117,6 +129,10 @@ struct aws_hash *aws_sha1_default_new(struct aws_allocator *allocator) {
+     hash->allocator = allocator;
+     hash->vtable = &s_sha1_vtable;
+     hash->digest_size = AWS_SHA1_LEN;
++#ifdef __SEAHORN__
++    EVP_MD_CTX *ctx = NULL;
++    hash->good = nd_bool();
++#else
+     EVP_MD_CTX *ctx = g_aws_openssl_evp_md_ctx_table->new_fn();
+     hash->impl = ctx;
+     hash->good = true;
+@@ -132,6 +148,7 @@ struct aws_hash *aws_sha1_default_new(struct aws_allocator *allocator) {
+         aws_raise_error(AWS_ERROR_UNKNOWN);
+         return NULL;
+     }
++#endif
+ 
+     return hash;
+ }
+@@ -140,15 +157,18 @@ static int s_update(struct aws_hash *hash, const struct aws_byte_cursor *to_hash
+     if (!hash->good) {
+         return aws_raise_error(AWS_ERROR_INVALID_STATE);
+     }
+-
++#ifdef __SEAHORN__
++    hash->good = nd_bool();
++    return nd_int();
+     EVP_MD_CTX *ctx = hash->impl;
+-
++#else
+     if (AWS_LIKELY(g_aws_openssl_evp_md_ctx_table->update_fn(ctx, to_hash->ptr, to_hash->len))) {
+         return AWS_OP_SUCCESS;
+     }
+ 
+     hash->good = false;
+     return aws_raise_error(AWS_ERROR_INVALID_ARGUMENT);
++#endif
+ }
+ 
+ static int s_finalize(struct aws_hash *hash, struct aws_byte_buf *output) {
+@@ -164,12 +184,17 @@ static int s_finalize(struct aws_hash *hash, struct aws_byte_buf *output) {
+         return aws_raise_error(AWS_ERROR_SHORT_BUFFER);
+     }
+ 
++#ifdef __SEAHORN__
++    hash->good = nd_bool();
++    return nd_int();
++#else
+     if (AWS_LIKELY(g_aws_openssl_evp_md_ctx_table->final_ex_fn(
+             ctx, output->buffer + output->len, (unsigned int *)&buffer_len))) {
+         output->len += hash->digest_size;
+         hash->good = false;
+         return AWS_OP_SUCCESS;
+     }
++#endif
+ 
+     hash->good = false;
+     return aws_raise_error(AWS_ERROR_INVALID_ARGUMENT);
+diff --git a/source/unix/opensslcrypto_hmac.c b/source/unix/opensslcrypto_hmac.c
+index 732ead4..7f2b769 100644
+--- a/source/unix/opensslcrypto_hmac.c
++++ b/source/unix/opensslcrypto_hmac.c
+@@ -8,6 +8,13 @@
+ #include <openssl/evp.h>
+ #include <openssl/hmac.h>
+ 
++#ifdef __SEAHORN__
++#    include <seahorn/seahorn.h>
++
++#    include <proof_allocators.h>
++#    include <utils.h>
++#endif
++
+ static void s_destroy(struct aws_hmac *hmac);
+ static int s_update(struct aws_hmac *hmac, const struct aws_byte_cursor *to_hmac);
+ static int s_finalize(struct aws_hmac *hmac, struct aws_byte_buf *output);
+@@ -26,9 +33,11 @@ static void s_destroy(struct aws_hmac *hmac) {
+     }
+ 
+     HMAC_CTX *ctx = hmac->impl;
++#ifndef __SEAHORN__
+     if (ctx != NULL) {
+         g_aws_openssl_hmac_ctx_table->free_fn(ctx);
+     }
++#endif
+ 
+     aws_mem_release(hmac->allocator, hmac);
+ }
+@@ -60,6 +69,7 @@ struct aws_hmac *aws_sha256_hmac_default_new(struct aws_allocator *allocator, co
+     hmac->vtable = &s_sha256_hmac_vtable;
+     hmac->digest_size = AWS_SHA256_HMAC_LEN;
+     HMAC_CTX *ctx = NULL;
++#ifndef __SEAHORN__
+     ctx = g_aws_openssl_hmac_ctx_table->new_fn();
+ 
+     if (!ctx) {
+@@ -78,6 +88,7 @@ struct aws_hmac *aws_sha256_hmac_default_new(struct aws_allocator *allocator, co
+         aws_raise_error(AWS_ERROR_INVALID_ARGUMENT);
+         return NULL;
+     }
++#endif
+ 
+     return hmac;
+ }
+@@ -89,12 +100,17 @@ static int s_update(struct aws_hmac *hmac, const struct aws_byte_cursor *to_hmac
+ 
+     HMAC_CTX *ctx = hmac->impl;
+ 
++#ifdef __SEAHORN__
++    hmac->good = nd_bool();
++    return nd_int();
++#else
+     if (AWS_LIKELY(g_aws_openssl_hmac_ctx_table->update_fn(ctx, to_hmac->ptr, to_hmac->len))) {
+         return AWS_OP_SUCCESS;
+     }
+ 
+     hmac->good = false;
+     return aws_raise_error(AWS_ERROR_INVALID_ARGUMENT);
++#endif
+ }
+ 
+ static int s_finalize(struct aws_hmac *hmac, struct aws_byte_buf *output) {
+@@ -110,6 +126,10 @@ static int s_finalize(struct aws_hmac *hmac, struct aws_byte_buf *output) {
+         return aws_raise_error(AWS_ERROR_SHORT_BUFFER);
+     }
+ 
++#ifdef __SEAHORN__
++    hmac->good = nd_bool();
++    return nd_int();
++#else
+     if (AWS_LIKELY(
+             g_aws_openssl_hmac_ctx_table->final_fn(ctx, output->buffer + output->len, (unsigned int *)&buffer_len))) {
+         hmac->good = false;
+@@ -119,4 +139,5 @@ static int s_finalize(struct aws_hmac *hmac, struct aws_byte_buf *output) {
+ 
+     hmac->good = false;
+     return aws_raise_error(AWS_ERROR_INVALID_ARGUMENT);
++#endif
+ }

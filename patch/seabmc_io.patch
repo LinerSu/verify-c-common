@@ -1,0 +1,184 @@
+diff --git a/source/pem.c b/source/pem.c
+index 154a32c..69426d1 100644
+--- a/source/pem.c
++++ b/source/pem.c
+@@ -8,6 +8,10 @@
+ #include <aws/io/private/pem_utils.h>
+ 
+ #include <aws/io/logging.h>
++#ifdef __SEAHORN__
++#include <seahorn/seahorn.h>
++#include <config.h>
++#endif
+ 
+ enum aws_pem_parse_state {
+     BEGIN,
+@@ -30,6 +34,9 @@ int aws_sanitize_pem(struct aws_byte_buf *pem, struct aws_allocator *allocator)
+     }
+     struct aws_byte_cursor pem_cursor = aws_byte_cursor_from_buf(pem);
+     enum aws_pem_parse_state state = BEGIN;
++    if (pem_cursor.len <= 27) {
++        return aws_raise_error(AWS_ERROR_INVALID_ARGUMENT);
++    }
+ 
+     for (size_t i = 0; i < pem_cursor.len; i++) {
+         /* parse through the pem once */
+@@ -40,6 +47,12 @@ int aws_sanitize_pem(struct aws_byte_buf *pem, struct aws_allocator *allocator)
+                     struct aws_byte_cursor compare_cursor = pem_cursor;
+                     compare_cursor.len = begin_header.len;
+                     compare_cursor.ptr += i;
++                    // code assume the preceeding character must matach the length
++                    // but this is not always true
++                    // they compare the contents but assume the buffer is accessible
++                    if (compare_cursor.len + i > pem_cursor.len) {
++                        return aws_raise_error(AWS_ERROR_INVALID_ARGUMENT);
++                    }
+                     if (aws_byte_cursor_eq(&compare_cursor, &begin_header)) {
+                         state = ON_DATA;
+                         i--;
+@@ -52,6 +65,9 @@ int aws_sanitize_pem(struct aws_byte_buf *pem, struct aws_allocator *allocator)
+                     struct aws_byte_cursor compare_cursor = pem_cursor;
+                     compare_cursor.len = end_header.len;
+                     compare_cursor.ptr += i;
++                    if (compare_cursor.len + i > pem_cursor.len) {
++                        return aws_raise_error(AWS_ERROR_INVALID_ARGUMENT);
++                    }
+                     if (aws_byte_cursor_eq(&compare_cursor, &end_header)) {
+                         /* Copy the end header string and start to search for the end part of a pem */
+                         state = END;
+@@ -67,6 +83,9 @@ int aws_sanitize_pem(struct aws_byte_buf *pem, struct aws_allocator *allocator)
+                     struct aws_byte_cursor compare_cursor = pem_cursor;
+                     compare_cursor.len = dashes.len;
+                     compare_cursor.ptr += i;
++                    if (compare_cursor.len + i > pem_cursor.len) {
++                        return aws_raise_error(AWS_ERROR_INVALID_ARGUMENT);
++                    }
+                     if (aws_byte_cursor_eq(&compare_cursor, &dashes)) {
+                         /* End part of a pem, copy the last 5 dashes and a new line, then ignore everything before next
+                          * begin header */
+@@ -254,8 +273,11 @@ static int s_convert_pem_to_raw_base64(
+     if (aws_array_list_init_dynamic(&split_buffers, allocator, 16, sizeof(struct aws_byte_cursor))) {
+         return AWS_OP_ERR;
+     }
+-
++    #ifdef __SEAHORN__
+     if (aws_byte_cursor_split_on_char(&pem, '\n', &split_buffers)) {
++    #else
++    if (aws_byte_cursor_split_on_char_n(&pem, '\n', 16, &split_buffers)) {
++    #endif
+         aws_array_list_clean_up(&split_buffers);
+         AWS_LOGF_ERROR(AWS_LS_IO_PEM, "Invalid PEM buffer: failed to split on newline");
+         return aws_raise_error(AWS_ERROR_PEM_MALFORMED);
+@@ -278,6 +300,11 @@ static int s_convert_pem_to_raw_base64(
+         struct aws_byte_cursor *line_cur_ptr = NULL;
+         int error = aws_array_list_get_at_ptr(&split_buffers, (void **)&line_cur_ptr, i);
+         /* should never fail as we control array size and how we index into list */
++        #ifdef __SEAHORN__
++        if (error != AWS_OP_SUCCESS) {
++            return AWS_OP_ERR;
++        }
++        #endif
+         AWS_FATAL_ASSERT(error == AWS_OP_SUCCESS);
+ 
+         /* Burn off the padding in the buffer first.
+diff --git a/source/stream.c b/source/stream.c
+index ecc5652..3d21e53 100644
+--- a/source/stream.c
++++ b/source/stream.c
+@@ -10,45 +10,7 @@
+ #include <aws/io/private/tracing.h>
+ 
+ #include <errno.h>
+-
+-int aws_input_stream_seek(struct aws_input_stream *stream, int64_t offset, enum aws_stream_seek_basis basis) {
+-    AWS_ASSERT(stream && stream->vtable && stream->vtable->seek);
+-
+-    return stream->vtable->seek(stream, offset, basis);
+-}
+-
+-int aws_input_stream_read(struct aws_input_stream *stream, struct aws_byte_buf *dest) {
+-    AWS_ASSERT(stream && stream->vtable && stream->vtable->read);
+-    AWS_ASSERT(dest);
+-    AWS_ASSERT(dest->len <= dest->capacity);
+-
+-    /* Deal with this edge case here, instead of relying on every implementation to do it right. */
+-    if (dest->capacity == dest->len) {
+-        return AWS_OP_SUCCESS;
+-    }
+-
+-    /* Prevent implementations from accidentally overwriting existing data in the buffer.
+-     * Hand them a "safe" buffer that starts where the existing data ends. */
+-    const void *safe_buf_start = dest->buffer + dest->len;
+-    const size_t safe_buf_capacity = dest->capacity - dest->len;
+-    struct aws_byte_buf safe_buf = aws_byte_buf_from_empty_array(safe_buf_start, safe_buf_capacity);
+-
+-    __itt_task_begin(io_tracing_domain, __itt_null, __itt_null, tracing_input_stream_read);
+-    int read_result = stream->vtable->read(stream, &safe_buf);
+-    __itt_task_end(io_tracing_domain);
+-
+-    /* Ensure the implementation did not commit forbidden acts upon the buffer */
+-    AWS_FATAL_ASSERT(
+-        (safe_buf.buffer == safe_buf_start) && (safe_buf.capacity == safe_buf_capacity) &&
+-        (safe_buf.len <= safe_buf_capacity));
+-
+-    if (read_result == AWS_OP_SUCCESS) {
+-        /* Update the actual buffer */
+-        dest->len += safe_buf.len;
+-    }
+-
+-    return read_result;
+-}
++#include <seahorn/seahorn.h>
+ 
+ int aws_input_stream_get_status(struct aws_input_stream *stream, struct aws_stream_status *status) {
+     AWS_ASSERT(stream && stream->vtable && stream->vtable->get_status);
+@@ -160,6 +122,49 @@ static int s_aws_input_stream_byte_cursor_read(struct aws_input_stream *stream,
+     return AWS_OP_SUCCESS;
+ }
+ 
++int aws_input_stream_seek(struct aws_input_stream *stream, int64_t offset, enum aws_stream_seek_basis basis) {
++    AWS_ASSERT(stream && stream->vtable && stream->vtable->seek);
++
++    return s_aws_input_stream_byte_cursor_seek(stream, offset, basis);
++}
++
++int aws_input_stream_read(struct aws_input_stream *stream, struct aws_byte_buf *dest) {
++    AWS_ASSERT(stream && stream->vtable && stream->vtable->read);
++    AWS_ASSERT(dest);
++    AWS_ASSERT(dest->len <= dest->capacity);
++
++    /* Deal with this edge case here, instead of relying on every implementation to do it right. */
++    if (dest->capacity == dest->len) {
++        return AWS_OP_SUCCESS;
++    }
++
++    /* Prevent implementations from accidentally overwriting existing data in the buffer.
++     * Hand them a "safe" buffer that starts where the existing data ends. */
++    const void *safe_buf_start = dest->buffer + dest->len;
++    const size_t safe_buf_capacity = dest->capacity - dest->len;
++    struct aws_byte_buf safe_buf = aws_byte_buf_from_empty_array(safe_buf_start, safe_buf_capacity);
++
++    #ifndef __SEAHORN__
++    __itt_task_begin(io_tracing_domain, __itt_null, __itt_null, tracing_input_stream_read);
++    #endif
++    int read_result = s_aws_input_stream_byte_cursor_read(stream, &safe_buf);
++    #ifndef __SEAHORN__
++    __itt_task_end(io_tracing_domain);
++    #endif
++
++    /* Ensure the implementation did not commit forbidden acts upon the buffer */
++    AWS_FATAL_ASSERT(
++        (safe_buf.buffer == safe_buf_start) && (safe_buf.capacity == safe_buf_capacity) &&
++        (safe_buf.len <= safe_buf_capacity));
++
++    if (read_result == AWS_OP_SUCCESS) {
++        /* Update the actual buffer */
++        dest->len += safe_buf.len;
++    }
++
++    return read_result;
++}
++
+ static int s_aws_input_stream_byte_cursor_get_status(
+     struct aws_input_stream *stream,
+     struct aws_stream_status *status) {
