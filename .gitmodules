@@ -1,3 +1,0 @@
-[submodule "aws-c-sdkutils"]
-	path = aws-c-sdkutils
-	url = https://github.com/awslabs/aws-c-sdkutils
