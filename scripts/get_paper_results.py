@@ -37,7 +37,7 @@ def parse_arguments():
     parser.add_argument('--details', action='store_true', help='Show more details of the results in table format')
     return parser.parse_args()
 
-def print_centered_title(title, width=34):
+def print_centered_title(title, single="*", width=34):
     """
     Prints a centered title within asterisks of the given width.
 
@@ -52,9 +52,9 @@ def print_centered_title(title, width=34):
         title += " "
 
     # Print the formatted output
-    print("*" * width)
+    print(single * width)
     print(" " * padding + title + " " * padding)
-    print("*" * width)
+    print(single * width)
 
 
 ###########################################
@@ -523,9 +523,7 @@ if __name__ == "__main__":
     args = parse_arguments()
     if args.details:
         SHOW_DETAILS = True
-    print("=" * 34)
-    print("           STATISTICS            ")
-    print("=" * 34)
+    print_centered_title("STATISTICS", "=")
     print(f"\nNote that the timeout threshold is {TIMEOUT_THRESHOLD} seconds.\n")
     print_column_explanations(explanations)
     read_csv()
