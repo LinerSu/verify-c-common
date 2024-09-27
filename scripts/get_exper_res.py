@@ -236,7 +236,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description='Present flags to decide which tool will be tested.')
     parser.add_argument('--seahorn', action='store_true', default=True)
-    parser.add_argument('--seahorn_root', type=str, default=SEAHORN_ROOT)
+    parser.add_argument('--seahorn-root', dest="seahorn_root", type=str, default=SEAHORN_ROOT)
     parser.add_argument('--klee', action='store_true', default=False)
     parser.add_argument('--symbiotic', action='store_true', default=False)
     parser.add_argument('--clam', action='store_true', default=False)
