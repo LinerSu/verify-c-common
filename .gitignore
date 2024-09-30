@@ -8,3 +8,5 @@ aws-c-common/*
 compile_commands.json
 __pycache__
 CMakeUserPresets.json
+seahorn/jobs_crab
+seahorn/jobs_unsafe/

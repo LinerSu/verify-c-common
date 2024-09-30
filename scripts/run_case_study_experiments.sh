@@ -61,6 +61,6 @@ run_experiment $Y2 $SEABMC ""
 run_experiment $Y2 $AIBMC "--crab"
 
 # Gether results
-python3 get_paper_results.py > ../res/vmcai/results.txt
+python3 get_paper_results.py > ../res/vmcai/paper_results/results.txt
 # For more detailed results, use the following command
 # python3 get_paper_results.py --details

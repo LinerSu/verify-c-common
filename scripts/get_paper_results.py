@@ -25,7 +25,8 @@ SHOW_Y2 = False
 Y2 = "Yices2" 
 Z3 = "Z3"
 PROJT_ROOT_DIR = os.path.abspath(os.pardir)
-DATA_DIR = f'{PROJT_ROOT_DIR}/res/vmcai'
+DATA_DIR = f'{PROJT_ROOT_DIR}/res/vmcai/data'
+RESULT_DIR = f'{PROJT_ROOT_DIR}/res/vmcai/paper_results'
 SHOW_DETAILS = False
 # pd.set_option('use_inf_as_na', True)
 
@@ -146,8 +147,8 @@ def dump_graph(res, res2):
     # print(time_plot[:1])
     fig = plt.figure(figsize=(15, 12))
     show_graph_2(time_plot)
-    pic_path = os.path.join(os.getcwd(), 'SP_case_study.png')
-    plt.savefig(f'SP_case_study.png')
+    pic_path = os.path.join(RESULT_DIR, 'SP_case_study.png')
+    plt.savefig(pic_path)
     print(f"Please find the graph in {pic_path}.")
 
 ###########################################
