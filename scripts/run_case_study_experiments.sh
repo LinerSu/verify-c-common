@@ -5,6 +5,11 @@ TOOL_DIR=$1
 # Set the debug level (info, debug)
 DEBUG_LEVEL=${2:-info}  # Default to info if not provided
 
+# by default, run: ./run_case_study_experiments.sh $SEAHORN_ROOT
+
+# Cleanup all previous runs
+./clean_up.sh
+
 # Function to print debug messages
 debug() {
     if [ "$DEBUG_LEVEL" == "debug" ]; then
