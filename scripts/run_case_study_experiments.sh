@@ -8,7 +8,7 @@ DEBUG_LEVEL=${2:-info}  # Default to info if not provided
 # by default, run: ./run_case_study_experiments.sh $SEAHORN_ROOT
 
 # Cleanup all previous runs
-./clean_up.sh
+# ./clean_up.sh
 
 # Function to print debug messages
 debug() {
@@ -20,7 +20,6 @@ debug() {
 SCRIPT_DIR="$(dirname "$(realpath "$0")")"
 PARENT_DIR=$(dirname "$SCRIPT_DIR")
 VMCAI_RES_DIR="$PARENT_DIR/res/vmcai"
-DATA_DIR="$PARENT_DIR/data"
 if [ ! -d "$VMCAI_RES_DIR" ]; then
     mkdir -p "$VMCAI_RES_DIR"
 fi
@@ -40,21 +39,22 @@ run_experiment() {
     local extra_flags=$3
     printf $DIVIDER
     echo "Running $tool with $solver..."
+    printf $DIVIDER
     if [ "$solver" == "$Z3" ]; then
         if [ "$DEBUG_LEVEL" == "debug" ]; then
-            python3 get_exper_res.py --seahorn --seahorn-root '$TOOL_DIR' --timeout 900 --bleed_edge --debug --large_bounds $extra_flags
+            python3 get_exper_res.py --seahorn --seahorn-root $TOOL_DIR --timeout 900 --bleed_edge --debug --large_bounds $extra_flags
         else
-            python3 get_exper_res.py --seahorn --seahorn-root '$TOOL_DIR' --timeout 900 --bleed_edge --large_bounds $extra_flags
+            python3 get_exper_res.py --seahorn --seahorn-root $TOOL_DIR --timeout 900 --bleed_edge --large_bounds $extra_flags
         fi
         # python3 get_exper_res.py --seahorn --seahorn-root $TOOL_DIR --timeout 900 --bleed_edge --debug --large_bounds $extra_flags
     elif [ "$solver" == "$Y2" ]; then
         if [ "$DEBUG_LEVEL" == "debug" ]; then
-            VERIFY_FLAGS=\"--horn-bmc-logic=QF_AUFBV --horn-bmc-solver=smt-y2\" python3 get_exper_res.py --seahorn --seahorn-root '$TOOL_DIR' --timeout 900 --bleed_edge --debug --large_bounds $extra_flags
+            env VERIFY_FLAGS="--horn-bmc-logic=QF_AUFBV --horn-bmc-solver=smt-y2" python3 get_exper_res.py --seahorn --seahorn-root $TOOL_DIR --timeout 900 --bleed_edge --debug --large_bounds $extra_flags
         else
-            VERIFY_FLAGS=\"--horn-bmc-logic=QF_AUFBV --horn-bmc-solver=smt-y2\" python3 get_exper_res.py --seahorn --seahorn-root '$TOOL_DIR' --timeout 900 --bleed_edge --large_bounds $extra_flags
+            env VERIFY_FLAGS="--horn-bmc-logic=QF_AUFBV --horn-bmc-solver=smt-y2" python3 get_exper_res.py --seahorn --seahorn-root $TOOL_DIR --timeout 900 --bleed_edge --large_bounds $extra_flags
         fi
     fi
-    cp $DATA_DIR/brunch_stat.csv $VMCAI_RES_DIR/${tool}_${solver}.csv
+    printf $DIVIDER
     echo "Done running $tool with $solver."
     printf $DIVIDER
 }
@@ -65,7 +65,10 @@ run_experiment $Z3 $AIBMC "--crab"
 run_experiment $Y2 $SEABMC ""
 run_experiment $Y2 $AIBMC "--crab"
 
-# Gether results
-python3 get_paper_results.py > ../res/vmcai/paper_results/results.txt
+# Gather results
+printf "\n\n================================================\n"
+echo "                 STATISTICS                 "
+printf "================================================\n\n"
+python3 get_paper_results.py > $VMCAI_RES_DIR/paper_results/results.txt
 # For more detailed results, use the following command
 # python3 get_paper_results.py --details

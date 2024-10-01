@@ -16,6 +16,7 @@ int main(void) {
   size_t len;
 #ifdef __CRAB__
   const char *str = ensure_c_str_is_nd_allocated(MAX_STRING_LEN, &len);
+  assume(len % 8 == 0);
 #else
   const char *str = ensure_c_str_is_nd_allocated_aligned(MAX_STRING_LEN, &len);
 #endif
