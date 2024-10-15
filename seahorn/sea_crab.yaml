@@ -1,5 +1,5 @@
 verify_options:
-  temp-dir: /tmp/verify-c-common/crab
+  temp-dir: /tmp/results/case_study/crab
 # Use crab infer bounds / range (before loop unrolling)
   seapp-crab-lower-is-deref: true
   seapp-crab-dom: 'zones'
