@@ -41,7 +41,7 @@ verify_options:
   '-S': ''
 # keep intermediate results for debugging 
   keep-temps: ''
-  temp-dir: /tmp/verify-c-common
+  temp-dir: /tmp/results/case_study
 # time and result stats
   horn-stats: true
 # ignore converting function with prefix sea_nd to nd function
