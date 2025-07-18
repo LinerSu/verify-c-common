@@ -153,17 +153,17 @@ def collect_stat_from_ctest_log(outfile, use_crab):
     if args.seahorn:
         output_file_name = "AI4BMC" if "--crab" in extra else "SEABMC"
         output_dir_name = 'y2' if os.getenv('VERIFY_FLAGS') else 'z3'
-        vmcai_log_path = os.path.join(os.path.abspath('../'), 'res/vmcai/outputs', output_dir_name)
-        os.makedirs(vmcai_log_path, exist_ok=True)
+        vstte_log_path = os.path.join(os.path.abspath('../'), 'res/vstte/outputs', output_dir_name)
+        os.makedirs(vstte_log_path, exist_ok=True)
         file_ext_name = 'Yices2' if os.getenv('VERIFY_FLAGS') else 'Z3'
         new_log_name = f'{output_file_name}_{file_ext_name}.log'
-        vmcai_log_path = os.path.join(vmcai_log_path, new_log_name)
-        copy_ctest_results(os.path.join(test_tmpdir, latest_log), vmcai_log_path)
-        vmcai_log_path = os.path.join(vmcai_log_path, latest_log)
+        vstte_log_path = os.path.join(vstte_log_path, new_log_name)
+        copy_ctest_results(os.path.join(test_tmpdir, latest_log), vstte_log_path)
+        vstte_log_path = os.path.join(vstte_log_path, latest_log)
         data = read_brunchstat_from_log(os.path.join(test_tmpdir, latest_log))
         new_csv_name = f'{output_file_name}_{file_ext_name}.csv'
-        vmcai_csv_path = os.path.join(os.path.abspath('../'), 'res/vmcai/data', new_csv_name)
-        write_brunchstat_into_csv(data, vmcai_csv_path)
+        vstte_csv_path = os.path.join(os.path.abspath('../'), 'res/vstte/data', new_csv_name)
+        write_brunchstat_into_csv(data, vstte_csv_path)
     elif args.symbiotic:
         data = read_symbiotic_bruchstat_from_log(os.path.join(
             test_tmpdir, latest_log), BUILDABSPATH, args.timeout)

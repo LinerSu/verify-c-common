@@ -2,21 +2,24 @@ verify_options:
   temp-dir: /tmp/results/case_study/crab
 # Use crab infer bounds / range (before loop unrolling)
   seapp-crab-lower-is-deref: true
-  seapp-crab-dom: 'zones'
+  seapp-crab-dom: 'fixed-tvpi-dbm' # fixed-tvpi-dbm, tvpi-dbm, zones, pk, pk-pplite
   seapp-crab-stats: true
   seapp-crab-disable-warning: true
-  seapp-crab-obj-reduction: 'OPT'
-  seapp-crab-liveness: ''
-  # seapp-crab-assume-is-deref: '' # Add asume isderef true
+  # seapp-crab-obj-reduction: 'OPT'
+  seapp-crab-liveness: false
+  seapp-crab-assume-is-deref: '' # Add asume isderef true
   # log: 'seapp-crab'
-  # log: 'seapp-crab-ir'
+  # log: 'seapp-crab-ir' # --log seapp-crab --log seapp-crab-ir
+  # crab-show-stats: '' # show crab stats at pp level
 # Use crab infer bounds(after loop unrolling)
   horn-bv2-crab-check-is-deref: ''
-  horn-bmc-crab-dom: 'zones'
-  horn-bv2-crab-obj-reduction: 'OPT'
-  horn-bv2-crab-liveness: ''
+  horn-bmc-crab-dom: 'fixed-tvpi-dbm' # fixed-tvpi-dbm, tvpi-dbm, zones, pk, pk-pplite
+  # horn-bv2-crab-obj-reduction: 'OPT'
+  horn-bv2-crab-liveness: false
+  # horn-bv2-crab-stats: '' # show crab stats at opsem level
   # horn-bv2-crab-is-deref-assume: '' # Add asume isderef true
   crab-disable-warning: true
+  crab-only: true
   # log: 'opsem-crab'
   # log: 'opsem-crab-ir'
 # Statistics

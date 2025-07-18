@@ -16,6 +16,7 @@ ASSERT_ERROR_PREFIX = r'^Error: assertion failed'
 # the plan is to have two sets, vac error and info and put filepath:linenumbers) into both
 VACUITY_CHECK_RE = r'^(?P<stream>Info|Error).*(?P<what>vacuity).*(?P<result>passed|failed).*sat\) (?P<debuginfo>.*)$'
 NO_TASK_PREFIX = r'^WARNING: (no assertion was found|The program has no main)'
+SEAHORN_PASS_PREFIX = r'^BRUNCH_STAT\s+seahorn_total\s+(\d+\.\d{2})$'
 
 def check_vacuity(line, passed_set, failed_set):
     m = re.match(VACUITY_CHECK_RE, line)
@@ -130,7 +131,7 @@ def main(argv):
             cmd.append(args.command)
             # Clam config
             if args.clam:
-                cmd = ['/home/yusen/clam/build/run/bin/clam-yaml.py']
+                cmd = ['/home/agent/tools/clam/build_rgn/run/bin/clam-yaml.py']
                 clam_config = os.path.join(script_dir, 'seahorn', 
                                           'clam.base.yaml')
                 cmd.extend(['-y', clam_config])
@@ -165,6 +166,8 @@ def main(argv):
                     found_expected = True
                 elif re.match(ASSERT_ERROR_PREFIX, line):
                     found_error = True
+                elif re.match(SEAHORN_PASS_PREFIX, line):
+                    found_expected = True
                 else:
                     check_vacuity_inner(line, vacuity_passed, vacuity_failed)
                

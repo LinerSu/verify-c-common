@@ -182,23 +182,25 @@ INLINE void *memset(void * dst, int s, size_t count) {
 
 INLINE void *memchr(const void *str, int c, size_t n) {
   sassert(sea_is_dereferenceable(str, n));
+  const uint8_t *p = (const uint8_t *)str;
+  uint8_t ch = (uint8_t)c;
   size_t i;
   size_t max_buffer_size = sea_max_buffer_size();
-  uint8_t ch = (uint8_t)c;
 
-  const uint8_t *p;
-  /* pre-unroll the loop for MAX_BUFFER_SIZE */
+  /* pre‑unroll only up to either n or max_buffer_size, whichever is smaller */
   for (i = 0; i < max_buffer_size; i++) {
     if (i < n) {
       if (p[i] == ch)
-        return (void *)&p[i];
+        return (void *)(p + i);
     }
   }
-  /* unroll the rest, if any */
+
+  /* handle the rest if n > max_buffer_size */
   for (i = max_buffer_size; i < n; i++) {
     if (p[i] == ch)
-      return (void *)&p[i];
+      return (void *)(p + i);
   }
+
   return NULL;
 }
 
