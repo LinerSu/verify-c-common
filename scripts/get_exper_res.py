@@ -106,6 +106,8 @@ def run_ctest_for_seahorn():
     if extra and len(extra) > 0:
         verify_flags = " ".join(extra)
         print(f'Run SeaHorn with extra configs: {verify_flags} ')
+        if "--crab" in extra:
+            verify_flags += " --domain " + args.domain
         set_env = f'env VERIFY_FLAGS=\"{verify_flags}\"'
     cmake_conf = make_new_cmake_conf()
     command_lst = ["rm -rf *", cmake_conf, "ninja",
@@ -151,7 +153,7 @@ def collect_stat_from_ctest_log(outfile, use_crab):
     latest_log = logfiles[0]
     print("collecting brunch stat from " + logfiles[0])
     if args.seahorn:
-        output_file_name = "AI4BMC" if "--crab" in extra else "SEABMC"
+        output_file_name = f'AI4BMC_{args.domain}' if "--crab" in extra else "SEABMC"
         output_dir_name = 'y2' if os.getenv('VERIFY_FLAGS') else 'z3'
         vstte_log_path = os.path.join(os.path.abspath('../'), 'res/vstte/outputs', output_dir_name)
         os.makedirs(vstte_log_path, exist_ok=True)
@@ -259,6 +261,12 @@ if __name__ == "__main__":
     parser.add_argument('--klee', action='store_true', default=False)
     parser.add_argument('--symbiotic', action='store_true', default=False)
     parser.add_argument('--clam', action='store_true', default=False)
+    parser.add_argument(
+        "--domain", type=str,
+        choices=["fixed-tvpi-dbm", "zones", "pk-pplite", "pk"],
+        dest='domain', default="zones",
+        help="Choose an abstract domain: fixed-tvpi-dbm, zones, pk-pplite, or pk.",
+    )
     parser.add_argument('--bleed_edge', action='store_true', default=False)
     parser.add_argument('--debug', action='store_true', default=False)
     parser.add_argument('--timeout', type=int, default=2000,

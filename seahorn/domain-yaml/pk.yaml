@@ -1,0 +1,3 @@
+verify_options:
+  seapp-crab-dom: 'pk'
+  horn-bmc-crab-dom: 'pk'

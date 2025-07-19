@@ -1,5 +1,5 @@
 verify_options:
-  temp-dir: /tmp/results/case_study/crab
+  temp-dir: /tmp/results/aws-c/crab
 # Use crab infer bounds / range (before loop unrolling)
   seapp-crab-lower-is-deref: true
   seapp-crab-dom: 'fixed-tvpi-dbm' # fixed-tvpi-dbm, tvpi-dbm, zones, pk, pk-pplite

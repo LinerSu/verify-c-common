@@ -464,6 +464,8 @@ configure_file(sea_cex_base.yaml sea.cex.yaml @ONLY)
 configure_file(sea_vac.yaml sea.vac.yaml @ONLY)
 configure_file(sea_pcond.yaml sea.pcond.yaml @ONLY)
 configure_file(clam_base.yaml clam.base.yaml @ONLY)
+# domain yaml files
+add_subdirectory(domain-yaml)
 
 # compilation recipes for aws-c-common library
 add_subdirectory(aws-c-common-stubs)
